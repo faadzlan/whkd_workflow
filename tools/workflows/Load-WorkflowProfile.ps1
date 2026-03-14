@@ -7,7 +7,7 @@
     Like `source ~/.bashrc` in bash.
 
     Add this to your PowerShell profile to auto-load:
-    . C:\Users\faadz\Documents\whkd_setup\tools\workflows\Load-WorkflowProfile.ps1
+    . C:\Users\faadz\Documents\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1
 #>
 
 $workflowDir = $PSScriptRoot
@@ -172,7 +172,6 @@ function proj {
 function home { Set-Location $env:USERPROFILE }
 function docs { Set-Location "$env:USERPROFILE\Documents" }
 function dl { Set-Location "$env:USERPROFILE\Downloads" }
-function desktop { Set-Location "$env:USERPROFILE\Desktop" }
 
 # Open Explorer at current or specified directory
 function exp {
@@ -302,7 +301,7 @@ Write-Host "`nLoaded shortcuts:" -ForegroundColor Green
 
 Write-Host "`nNavigation:" -ForegroundColor Yellow
 Write-Host "  proj <name> [-e|-t|-w|-m]  - Jump to project (Explorer/Terminal/WSL/Emacs)" -ForegroundColor Gray
-Write-Host "  home, docs, dl, desktop    - Quick directory shortcuts" -ForegroundColor Gray
+Write-Host "  home, docs, dl             - Quick directory shortcuts" -ForegroundColor Gray
 Write-Host "  exp [path]                 - Open Explorer at current or specified path" -ForegroundColor Gray
 
 Write-Host "`nSettings:" -ForegroundColor Yellow
@@ -331,4 +330,4 @@ Write-Host "  findf <name> [path]        - Find files by name" -ForegroundColor 
 Write-Host "`nAdd to your profile for auto-load:" -ForegroundColor Cyan
 Write-Host "  notepad `$PROFILE" -ForegroundColor DarkGray
 Write-Host "  # Add this line:" -ForegroundColor DarkGray
-Write-Host "  . C:\Users\faadz\Documents\whkd_setup\tools\workflows\Load-WorkflowProfile.ps1" -ForegroundColor DarkGray
+Write-Host "  . C:\Users\faadz\Documents\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1" -ForegroundColor DarkGray

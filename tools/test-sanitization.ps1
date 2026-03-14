@@ -71,11 +71,11 @@ Write-Host ""
 
 Write-Host "--- Path Resolution Tests ---" -ForegroundColor Yellow
 
-$testPath = "~\Documents\whkd_setup"
+$testPath = "~\Documents\whkd_workflow"
 $resolvedPath = Resolve-ProjectPath -Path $testPath
 
 Test-Condition "~ expands to USERPROFILE" {
-    $resolvedPath -eq "C:\Users\$env:USERNAME\Documents\whkd_setup"
+    $resolvedPath -eq "C:\Users\$env:USERNAME\Documents\whkd_workflow"
 }
 
 Test-Condition "Resolved path exists" {
@@ -266,7 +266,7 @@ if ($runLiveTests -eq "y" -or $runLiveTests -eq "Y") {
         proj whkd
         $current = Get-Location
         Test-Condition "proj changed directory" {
-            $current.Path -eq (Resolve-ProjectPath "~\Documents\whkd_setup")
+            $current.Path -eq (Resolve-ProjectPath "~\Documents\whkd_workflow")
         }
     } else {
         Write-Host "proj command not loaded - skipping" -ForegroundColor Yellow

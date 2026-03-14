@@ -8,7 +8,7 @@ whkd is a simple Windows hotkey daemon that reads a configuration file and execu
 
 ## Project Structure
 ```
-C:\Users\faadz\Documents\whkd_setup/
+C:\Users\faadz\Documents\whkd_workflow/
 ├── AGENTS.md          # This file - project context for agents
 ├── FLIGHT_LOG.org     # Running log of lessons learned and best practices
 ├── whkdrc             # whkd configuration file (to be created)
@@ -46,7 +46,7 @@ C:\Users\faadz\Documents\whkd_setup/
 
 **Quick setup on Ubuntu/WSL:**
 ```bash
-cd /mnt/c/Users/<USERNAME>/Documents/whkd_setup/tools/shell
+cd /mnt/c/Users/<USERNAME>/Documents/whkd_workflow/tools/shell
 ./install_zsh_modern.sh
 ```
 
@@ -62,7 +62,7 @@ To add/modify projects, edit `tools/workflows/projects.json` - changes apply eve
 **Windows Projects:**
 ```json
 "whkd": {
-  "path": "~\\Documents\\whkd_setup",
+  "path": "~\\Documents\\whkd_workflow",
   "description": "Windows project"
 }
 ```

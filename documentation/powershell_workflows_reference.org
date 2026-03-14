@@ -8,7 +8,7 @@
 Load all shortcuts into your current PowerShell session:
 #+begin_src powershell
 # Navigate to project
-cd C:\Users\<USERNAME>\Documents\whkd_setup
+cd C:\Users\<USERNAME>\Documents\whkd_workflow
 
 # Load all workflows (the dot is required!)
 . .\tools\workflows\Load-WorkflowProfile.ps1
@@ -21,7 +21,7 @@ Add to your PowerShell profile (~/.bashrc equivalent):
 notepad $PROFILE
 
 # Add this line at the end:
-. C:\Users\faadz\Documents\whkd_setup\tools\workflows\Load-WorkflowProfile.ps1
+. C:\Users\faadz\Documents\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1
 #+end_src
 
 * Command Reference
@@ -38,13 +38,12 @@ notepad $PROFILE
 | ~home~    | -           | Go to home directory             | ~home~             |
 | ~docs~    | -           | Go to Documents                  | ~docs~             |
 | ~dl~      | -           | Go to Downloads                  | ~dl~               |
-| ~desktop~ | -           | Go to Desktop                    | ~desktop~          |
 
 *** Pre-configured Projects
 
 | Alias        | Path                                  |
 |--------------+---------------------------------------|
-| ~whkd~       | ~C:\Users\faadz\Documents\whkd_setup~ |
+| ~whkd~       | ~C:\Users\faadz\Documents\whkd_workflow~ |
 | ~drive~      | ~G:\My Drive~                         |
 | ~projects~   | ~G:\My Drive\Research~                |
 | ~of~, ~foam~ | ~G:\My Drive\Projects\OpenFOAM~       |
@@ -56,7 +55,7 @@ Edit ~tools/workflows/projects.json~ and add your project to the ~projects~ obje
 {
   "projects": {
     "whkd": {
-      "path": "~\\Documents\\whkd_setup",
+      "path": "~\\Documents\\whkd_workflow",
       "description": "Windows Hotkey Daemon setup project"
     },
     ...
@@ -241,7 +240,7 @@ Archives old Downloads files to prevent Explorer hangs.
 
 Run weekly via Task Scheduler:
 #+begin_src powershell
-schtasks /create /tn "Weekly Downloads Cleanup" /tr "powershell.exe -File `"C:\Users\faadz\Documents\whkd_setup\tools\workflows\Clear-Downloads.ps1`" -AutoArchive" /sc weekly /d SUN /st 18:00
+schtasks /create /tn "Weekly Downloads Cleanup" /tr "powershell.exe -File `"C:\Users\faadz\Documents\whkd_workflow\tools\workflows\Clear-Downloads.ps1`" -AutoArchive" /sc weekly /d SUN /st 18:00
 #+end_src
 
 ** Show-SystemHealth.ps1
@@ -339,7 +338,7 @@ WSL-Windows integration utilities.
 
 #+begin_src powershell
 # Load workflows (if not in profile)
-. C:\Users\faadz\Documents\whkd_setup\tools\workflows\Load-WorkflowProfile.ps1
+. C:\Users\faadz\Documents\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1
 
 # Start work environment
 work
@@ -466,16 +465,16 @@ Window positioning requires the window to be ready. If windows aren't moving:
 
 All scripts are in ~tools/workflows/~:
 
-| Script | Purpose |
-|--------+---------|
-| ~Load-WorkflowProfile.ps1~ | Master loader with all shortcuts |
-| ~Start-WorkEnvironment.ps1~ | Morning startup automation |
-| ~Close-AllWindows.ps1~ | Shutdown cleanup |
-| ~Clear-Downloads.ps1~ | Downloads maintenance |
-| ~Show-SystemHealth.ps1~ | System monitoring |
-| ~Open-QuickSettings.ps1~ | Settings shortcuts |
-| ~Go-ToProject.ps1~ | Project navigation |
-| ~wsl-bridge.ps1~ | WSL integration |
+| Script                      | Purpose                          |
+|-----------------------------+----------------------------------|
+| ~Load-WorkflowProfile.ps1~  | Master loader with all shortcuts |
+| ~Start-WorkEnvironment.ps1~ | Morning startup automation       |
+| ~Close-AllWindows.ps1~      | Shutdown cleanup                 |
+| ~Clear-Downloads.ps1~       | Downloads maintenance            |
+| ~Show-SystemHealth.ps1~     | System monitoring                |
+| ~Open-QuickSettings.ps1~    | Settings shortcuts               |
+| ~Go-ToProject.ps1~          | Project navigation               |
+| ~wsl-bridge.ps1~            | WSL integration                  |
 
 * Resources
 

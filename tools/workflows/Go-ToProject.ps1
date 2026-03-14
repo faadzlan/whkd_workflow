@@ -67,7 +67,7 @@ if ($List -or (-not $ProjectName)) {
     } -AutoSize
     
     Write-Host "Usage:" -ForegroundColor Yellow
-    Write-Host '  Go-ToProject whkd           # Change to whkd_setup directory' -ForegroundColor DarkGray
+    Write-Host '  Go-ToProject whkd           # Change to whkd_workflow directory' -ForegroundColor DarkGray
     Write-Host '  Go-ToProject of -Explorer   # Open OpenFOAM folder in File Explorer' -ForegroundColor DarkGray
     Write-Host '  Go-ToProject drive -WSL     # Open Drive in WSL terminal' -ForegroundColor DarkGray
     Write-Host '  Go-ToProject projects -Emacs # Open Emacs at Projects root' -ForegroundColor DarkGray

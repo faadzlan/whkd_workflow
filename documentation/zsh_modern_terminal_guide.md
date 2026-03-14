@@ -49,7 +49,7 @@ bash -c "$(curl --fail --show-error --silent --location https://raw.githubuserco
 Copy the provided `.zshrc` to your home directory:
 
 ```bash
-cp /mnt/c/Users/<USERNAME>/Documents/whkd_setup/tools/shell/zshrc ~/.zshrc
+cp /mnt/c/Users/<USERNAME>/Documents/whkd_workflow/tools/shell/zshrc ~/.zshrc
 ```
 
 Restart your terminal or run `zsh`.
