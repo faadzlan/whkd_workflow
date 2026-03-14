@@ -293,11 +293,11 @@ if ($testsFailed -gt 0) {
 
 if ($testsFailed -eq 0) {
     Write-Host ""
-    Write-Host "[PASS] All tests passed! Sanitization successful." -ForegroundColor Green
+    Write-Host "`u{2713} All tests passed! Sanitization successful." -ForegroundColor Green
     Write-Host "You can safely push to GitHub." -ForegroundColor Green
     exit 0
 } else {
     Write-Host ""
-    Write-Host "[FAIL] Some tests failed. Please review before pushing." -ForegroundColor Red
+    Write-Host "`u{2717} Some tests failed. Please review before pushing." -ForegroundColor Red
     exit 1
 }
