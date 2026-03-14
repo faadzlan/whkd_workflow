@@ -1,0 +1,42 @@
+{
+  "projects": {
+    "whkd": {
+      "path": "~\\Documents\\whkd_setup",
+      "description": "Windows Hotkey Daemon setup project"
+    },
+    "drive": {
+      "path": "G:\\My Drive",
+      "description": "Google Drive root"
+    },
+    "projects": {
+      "path": "G:\\My Drive\\Research",
+      "description": "Research projects folder"
+    },
+    "of": {
+      "path": "G:\\My Drive\\Projects\\OpenFOAM",
+      "description": "OpenFOAM simulations (alias: foam)"
+    },
+    "foam": {
+      "path": "G:\\My Drive\\Projects\\OpenFOAM",
+      "description": "OpenFOAM simulations (alias: of)"
+    },
+    "fluids": {
+      "path": "G:\\My Drive\\Teaching\\2025_2026_2\\KNJ2103",
+      "description": "Fluid Mechanics II"
+    },
+    "get": {
+      "path": "G:\\My Drive\\Research\\2025_2026_2\\GeranExplorasiTransformatif",
+      "description": "GET grant application"
+    },
+    "ssm": {
+      "path": "~/Documents/GeranPenyelidikanPembangunanSSM",
+      "type": "wsl",
+      "distro": "Ubuntu",
+      "description": "Geran Penyelidikan Pembangunan SSM (WSL)"
+    }
+  },
+  "metadata": {
+    "version": "1.0",
+    "lastUpdated": "2026-03-12"
+  }
+}

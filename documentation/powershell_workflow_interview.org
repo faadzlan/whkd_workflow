@@ -1,0 +1,133 @@
+#+title: PowerShell Workflow Interview
+#+subtitle: Finding automation opportunities for Windows 11 administration
+
+* Instructions
+Answer the questions below by editing this file. Focus on the 2-3 areas with the most friction in your current workflow.
+
+** How to Answer
+- Replace the "[Your answer here]" placeholder with your response
+- Use checkbox lists (- [ ]) for multiple items
+- Add details, examples, or screenshots as needed
+- Mark sections you're unsure about with "TODO" or "FIXME"
+
+* 1. Daily Startup & Shutdown Rituals
+
+** What apps do you manually open every day?
+- windows terminal
+- chrome
+
+** Do you have specific window layouts you arrange by hand?
+- Yes, the window layout I have in Desktop 2 is pretty much fixed: terminal on the right side (1/2 the screen) an two file explorer windows stacked on the left side
+- Then I'll have an emacs (running from within WSL) to open to the project root (the directory opened in the file explorer) on Desktop 3
+
+** Any "cleanup" you do before shutting down?
+Closing all windows
+
+
+* 2. File & Folder Management
+
+** Where do downloaded files go? How often do you clean Downloads?
+Downloaded files go to the Downloads folder. I clean them whenever I notice opening the Downloads directory ends up hanging file explorer and the task needs to be restarted: which is a nuisance.
+
+** How do you organize files by project, date, or something else?
+Alphabetically and then chronologically.
+
+** Ever need to rename many files at once?
+Yes! Especially after coming back from a field trip or site visit, I have a lot of images that needed renaming. I have found a workflow in which I ask Kimi to look at the images and suggest names depending on the content of the images, then output the naming scheme in an org file for me to review (there is a confidence meter in the org file indicating how sure Kimi is in the names. Those flagged NEED REVIEW will be reviewed, together with those of low confidence)
+
+** Do you sync files between folders or to cloud storage manually?
+I do need to sync files from the WSL side to the Windows side. I sometimes work on the WSL side of files because I need to use git and github. So, there is a bash script I aliased to run inotify, detecting if any changes are made and then rsyncing it over to the Windows side for GDrive syncing to the cloud. The actual files are on the WSL side, on the GDrive are only symlinks - I think.
+
+
+* 3. Software Management
+
+** How do you install software? (winget, scoop, choco, manual downloads?)
+All of the above. But its good to have a unified software installation method. When in linux systems most of the time its from the software manager, then some dpkgs only a numbered instance used .deb files.
+
+** How do you know what software is installed on your machine?
+I usually look at 'Add/Remove Software'
+
+** Ever need to check for updates across multiple tools?
+do you mean a need to check for updates across multiple software management tools?
+
+
+* 4. System Information & Monitoring
+
+** Ever wonder "why is my computer slow right now?"
+Who hasn't? This morning, when I came to office, I think I lost an hour of work time because my PC was lagging hard. I suspected the whkd scheduled task, I suspected the chrome browser, I ran task manager and even it froze before becoming active. Memory is nearly 90% with chrome using most of it. GPU usage is as usual, near zero. CPU usage is about 30% (I think). In the end a notification that I need to restart for an update appeared.
+
+** Check disk space regularly?
+No
+
+** Need to find which process is using port X?
+Never encountered such a need but I think good to know. Why is a process using a specific port (I'm not even sure what a port means and why processes choose specific ports)
+
+** Look up your IP address often?
+From time to time
+
+
+* 5. Repetitive UI Clicking
+
+** Any Windows Settings pages you visit frequently?
+Bluetooh settings regularly, sometimes audio settings when I'm setting up my online meetings or OBS recording correctly.
+
+** Right-click → Properties → [something] patterns?
+Yes! I usually Shift + Right Click in a directory I'm working to open a powershell/linux shell directly in that directory
+
+** Copy-paste file paths often?
+Not file paths, but file names. I usually resort to F2, then Ctrl + A to select all including file extension, then copy.
+
+** Multiple clicks to get to a specific folder?
+Yes! Since I use a hierarchical directory structure in my projects, the files can be buried deep. And I run OpenFOAM simulations too, so yes, the files are all in their specific places.
+
+
+* 6. Text & Data Work
+
+** Work with CSV files ever?
+All the time. Since I work with Kimi, Claude and Gemini, I know that the preferred data structure for smaller databased are CSVs. Because these AI models can read textfiles directly and manipulate them. If I give them Excel files, they need several layers of tooling before getting to the actual data.
+
+** Need to search text across many files?
+Yes. Especially when querying my OpenFOAM project tree or even while doing academic writing.
+
+** Extract data from logs or output?
+Yes when running OpenFOAM simulations
+
+
+* 7. Current Automation Attempts
+
+** Any batch files (.bat) lying around?
+Once upon a time there was an attempt to run emacs (which lives on the WSL side) from windows like a native windows application, in the sense that I can find and click the emacs app from the taskbar's start menu. If memory serves, that required a .bat file
+
+** Other scheduled tasks besides whkd?
+None for the time being
+
+** Shortcuts or hotkeys you've set up?
+Yes! I use the v1 Autohotkey in "G:\My Drive\Peribadi\autohotkeyScripts\lenovo-windows\myAutohotkeyScripts" for setting up most of my text expansions, shortcuts (like CapsLock to Ctrl, switching between next Virtual Desktop and the previous, things like that). I put the shortcut to the script in my startup folder so it starts everytime my machine starts.
+
+
+* 8. Cross-Environment Work
+
+** Use WSL? Docker? VMs?
+All the time. WSL is my main cross-environment platform.
+
+** SSH to remote machines?
+There was a time when I needed to do this, back when doing my PhD since I needed access to my university's HPC. Nowadays, I'm trying to setup an AWS cloud computing for running my OpenFOAM simulations.
+
+** Sync work between Windows and Linux?
+Yes. See answer from 2.
+
+
+* Priority Areas (Pick Your Top 2-3)
+
+Based on the above, which areas cause you the most friction?
+Rank them by annoyance level:
+
+1. Daily Startup & Shutdown Rituals
+2. Repetitive UI Clicking
+3. Cross-Environment Work
+
+
+* Additional Context
+
+Anything else about your Windows workflow that feels tedious, slow, or annoying?
+I think having a unified, robust, and reliable way to shortcut windows management, opening of specific directories, etc is the most tiring. I use Autohotkey for shortcut management, whkd for windows management by allowing me to assign a hotkey to a powershell command that would otherwise require me to open a powershell instance, key in the command and press enter just to switch to another virtual desktop! If I remember correctly the command/function/app(?) for switching virtual desktops were downloaded from the PowerShell Gallery in the past.

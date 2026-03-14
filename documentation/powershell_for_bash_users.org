@@ -1,0 +1,329 @@
+#+title: PowerShell for Bash Users - Quick Reference
+#+subtitle: Mapping bash concepts to PowerShell
+
+* Introduction
+
+This guide maps common bash concepts to their PowerShell equivalents, created during the whkd scheduled task troubleshooting session.
+
+* Basic Concepts
+
+| Bash               | PowerShell                           | Description                |
+|--------------------+--------------------------------------+----------------------------|
+| ~man~              | ~Get-Help~                           | View documentation         |
+| ~--help~           | ~-?~ or ~-Help~                      | Show command help          |
+| ~ls~               | ~Get-ChildItem~ or ~ls~, ~dir~       | List directory contents    |
+| ~cd~               | ~Set-Location~ or ~cd~               | Change directory           |
+| ~pwd~              | ~Get-Location~                       | Print working directory    |
+| ~cat~              | ~Get-Content~                        | Read file contents         |
+| ~echo~             | ~Write-Host~ or ~Write-Output~       | Print to screen            |
+| ~grep~             | ~Select-String~ or ~-match~, ~-like~ | Search/filter              |
+| ~ps aux~           | ~Get-Process~                        | List processes             |
+| ~kill~             | ~Stop-Process~                       | Terminate process          |
+| ~env~              | ~Get-ChildItem Env:~                 | List environment variables |
+| ~export VAR=value~ | ~$env:VAR = "value"~                 | Set environment variable   |
+| ~$VAR~             | ~$env:VAR~ or ~$VAR~                 | Access variable            |
+| ~2>/dev/null~      | ~-ErrorAction SilentlyContinue~      | Suppress errors            |
+| ~&&~               | ~; if ($?)~                          | Run if previous succeeded  |
+
+* Piping and Redirection
+
+** Bash vs PowerShell
+
+| Bash   | PowerShell | Description               |   |                             |
+|--------+------------+---------------------------+---+-----------------------------|
+| ~\     | ~          | ~\                        | ~ | Pipe output to next command |
+| ~>~    | ~>~        | Redirect output to file   |   |                             |
+| ~>>~   | ~>>~       | Append output to file     |   |                             |
+| ~<~    | ~<~        | Redirect input from file  |   |                             |
+| ~2>&1~ | ~2>&1~     | Redirect stderr to stdout |   |                             |
+
+** Important Difference
+
+PowerShell pipes *objects*, not text:
+
+#+begin_src powershell
+# Bash: grep extracts text, cut extracts columns
+# ps aux | grep whkd | awk '{print $2}'
+
+# PowerShell: filtering objects, selecting properties
+Get-Process | Where-Object { $_.Name -like "*whkd*" } | Select-Object Id
+#+end_src
+
+* Comparison Operators
+
+| Bash         | PowerShell    | Description             |
+|--------------+---------------+-------------------------|
+| ~==~         | ~-eq~         | Equal                   |
+| ~!=~         | ~-ne~         | Not equal               |
+| ~<~          | ~-lt~         | Less than               |
+| ~>~          | ~-gt~         | Greater than            |
+| ~<=~         | ~-le~         | Less than or equal      |
+| ~>=~         | ~-ge~         | Greater than or equal   |
+| ~=~          | ~-like~       | Wildcard match (*whkd*) |
+| ~==~ (regex) | ~-match~      | Regex match             |
+| ~!~          | ~-not~ or ~!~ | Negation                |
+
+* Variables
+
+** Bash
+#+begin_src bash
+name="John"
+echo $name
+echo "Hello $name"
+echo ${name}
+#+end_src
+
+** PowerShell
+#+begin_src powershell
+$name = "John"
+Write-Host $name
+Write-Host "Hello $name"
+Write-Host ${name}
+#+end_src
+
+** Special Variables
+
+| Bash        | PowerShell                    | Description                 |
+|-------------+-------------------------------+-----------------------------|
+| ~$?~        | ~$?~                          | Exit status of last command |
+| ~$$~        | ~$PID~                        | Current process ID          |
+| ~$#~        | ~$args.Count~                 | Number of arguments         |
+| ~$0~        | ~$PSCommandPath~              | Script name                 |
+| ~$1, $2...~ | ~$args[0], $args[1]...~       | Arguments                   |
+| ~$HOME~     | ~$HOME~ or ~$env:USERPROFILE~ | Home directory              |
+| ~$USER~     | ~$env:USERNAME~               | Current username            |
+
+* Conditionals
+
+** Bash
+#+begin_src bash
+if [ "$var" = "value" ]; then
+    echo "Match"
+elif [ "$var" = "other" ]; then
+    echo "Other"
+else
+    echo "No match"
+fi
+#+end_src
+
+** PowerShell
+#+begin_src powershell
+if ($var -eq "value") {
+    Write-Host "Match"
+} elseif ($var -eq "other") {
+    Write-Host "Other"
+} else {
+    Write-Host "No match"
+}
+#+end_src
+
+* Loops
+
+** For Loop
+
+Bash:
+#+begin_src bash
+for i in 1 2 3; do
+    echo $i
+done
+
+for ((i=0; i<10; i++)); do
+    echo $i
+done
+#+end_src
+
+PowerShell:
+#+begin_src powershell
+foreach ($i in 1..3) {
+    Write-Host $i
+}
+
+for ($i = 0; $i -lt 10; $i++) {
+    Write-Host $i
+}
+
+# Even better - range operator
+1..10 | ForEach-Object { Write-Host $_ }
+#+end_src
+
+* Common Tasks from This Project
+
+** Querying Scheduled Tasks
+
+#+begin_src powershell
+# Find tasks by name pattern
+Get-ScheduledTask | Where-Object { 
+    $_.TaskName -like "*whkd*" 
+} | Select-Object TaskName, State
+
+# Get detailed info about a specific task
+$task = Get-ScheduledTask -TaskName "Restart WHKD"
+$task.Actions    # What it does
+$task.Triggers   # When it runs
+
+# Get last run info
+Get-ScheduledTask -TaskName "Restart WHKD" | Get-ScheduledTaskInfo
+#+end_src
+
+** Process Management
+
+#+begin_src powershell
+# Check if process is running (like: ps aux | grep whkd)
+Get-Process -Name "whkd" -ErrorAction SilentlyContinue
+
+# Kill a process (like: kill <pid> or pkill whkd)
+Stop-Process -Name "whkd" -Force
+# or
+taskkill /f /im whkd.exe
+
+# Start a process hidden (no bash equivalent needed usually)
+Start-Process whkd -WindowStyle Hidden
+#+end_src
+
+** File Operations
+
+#+begin_src powershell
+# Check if file exists (like: [ -f file.txt ])
+Test-Path "file.txt"
+
+# Read file (like: cat file.txt)
+Get-Content "file.txt"
+
+# Write to file (like: echo "text" > file.txt)
+"text" | Out-File "file.txt"
+
+# Append to file (like: echo "text" >> file.txt)
+"text" | Out-File "file.txt" -Append
+
+# Create directory (like: mkdir -p path/to/dir)
+New-Item -ItemType Directory -Path "path\to\dir" -Force
+#+end_src
+
+* Object Properties vs Text Parsing
+
+This is the biggest mental shift from bash to PowerShell.
+
+** Bash approach (text parsing)
+#+begin_src bash
+# Get PID of whkd process
+ps aux | grep whkd | grep -v grep | awk '{print $2}'
+#+end_src
+
+** PowerShell approach (object properties)
+#+begin_src powershell
+# Get PID of whkd process
+(Get-Process -Name "whkd").Id
+
+# Or multiple properties
+Get-Process -Name "whkd" | Select-Object Id, Name, StartTime
+#+end_src
+
+* Special Variables Explained
+
+** $_ (The Current Object / Pipeline Variable)
+
+This is the trickiest concept for bash users. In PowerShell, `$_` represents the *current object* in a pipeline.
+
+*** Bash Comparison
+
+In bash, you might use pipes with text:
+#+begin_src bash
+# cat file.txt | grep "pattern" | awk '{print $1}'
+# Each command receives TEXT as input
+#+end_src
+
+In PowerShell, commands receive OBJECTS, and `$_` refers to the current object:
+#+begin_src powershell
+# Get-ScheduledTask | Where-Object { $_.TaskName -like "*whkd*" }
+#                          ^^^^^^^^^^^^^^^^^
+# For each task object flowing through the pipe, $_ represents THAT object
+#+end_src
+
+*** Breaking It Down
+
+#+begin_src powershell
+Get-ScheduledTask | Where-Object { $_.TaskName -like "*whkd*" }
+#     ^^^^^^^^^^^^^   ^^^^^^^^^^^   ^^  ^^^^^^^^    ^^^^^^^^
+#     Produces        Filters       |   Property    Pattern
+#     objects         objects       |
+#                                 $_ means "the current task object"
+#+end_src
+
+Think of it like a loop:
+#+begin_src powershell
+# This is conceptually what happens:
+foreach ($task in (Get-ScheduledTask)) {
+    if ($task.TaskName -like "*whkd*") {
+        # include in output
+    }
+}
+# $_ is just shorthand for $task inside the Where-Object block
+#+end_src
+
+*** Common Uses of $_
+
+| Context | Example | Meaning |
+|---------+---------+---------|
+| Where-Object | ~Where-Object { $_.Name -eq "whkd" }~ | Check property of each object |
+| ForEach-Object | ~ForEach-Object { $_.Length }~ | Access property of each object |
+| Select-Object | ~Select-Object { $_.Name }~ | Select property |
+| Sort-Object | ~Sort-Object { $_.Size }~ | Sort by property |
+
+*** Simplified Syntax (PowerShell 3.0+)
+
+Modern PowerShell lets you drop the `$_` and braces for simple cases:
+
+#+begin_src powershell
+# Long form (works everywhere)
+Get-Process | Where-Object { $_.Name -like "*whkd*" }
+
+# Short form (PowerShell 3.0+, simpler cases)
+Get-Process | Where-Object Name -like "*whkd*"
+
+# Even shorter (using ? as alias for Where-Object)
+Get-Process | ? Name -like "*whkd*"
+#+end_src
+
+** $args (Script Arguments)
+
+Like ~$1, $2, $3...~ in bash, but it's an array:
+#+begin_src powershell
+# script.ps1 param1 param2 param3
+$args[0]  # "param1" (like $1 in bash)
+$args[1]  # "param2" (like $2 in bash)
+$args.Count  # 3 (like $# in bash)
+#+end_src
+
+
+* Tips for Success
+
+1. **Use tab completion** - PowerShell has excellent tab completion for commands and parameters
+
+2. **Get-Help is your friend** - Most commands have extensive help:
+   #+begin_src powershell
+   Get-Help Get-ScheduledTask -Full
+   Get-Help Get-ScheduledTask -Examples
+   #+end_src
+
+3. **Use Get-Member to explore objects**:
+   #+begin_src powershell
+   Get-Process | Get-Member
+   # Shows all properties and methods available
+   #+end_src
+
+4. **Aliases exist but learn the full names**:
+   - ~ls~, ~dir~ → ~Get-ChildItem~
+   - ~cd~ → ~Set-Location~
+   - ~cat~, ~type~ → ~Get-Content~
+   - ~ps~ → ~Get-Process~
+   - ~kill~ → ~Stop-Process~
+
+5. **Strings**:
+   - Single quotes: ~'literal string'~ (no variable expansion)
+   - Double quotes: ~"expands $variables"~
+   - Here-strings: ~@"multi-line"@~
+
+* Resources
+
+- [[https://docs.microsoft.com/en-us/powershell/][Official PowerShell Documentation]]
+- [[https://ss64.com/ps/][SS64 PowerShell Reference]] (excellent command comparison)

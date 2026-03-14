@@ -1,0 +1,304 @@
+#+title: PowerShell 7 + PSReadLine - Modern Terminal Experience
+#+subtitle: Complete guide to predictive IntelliSense, history search, and customization
+
+* Quick Start
+
+PowerShell 7 comes with PSReadLine 2.2+ pre-installed, providing a modern terminal experience similar to zsh/Fish.
+
+** Enable the Basics
+
+Add to your ~$PROFILE~ (~notepad $PROFILE~):
+
+#+begin_src powershell
+# Essential PSReadLine configuration
+Set-PSReadLineOption -PredictionSource HistoryAndPlugin
+Set-PSReadLineOption -PredictionViewStyle ListView
+Set-PSReadLineOption -ShowToolTips
+Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
+#+end_src
+
+Reload: ~. $PROFILE~ or restart PowerShell.
+
+* Feature Overview
+
+| Feature | What It Does | Key/Default |
+|---------+--------------+-------------|
+| *Predictive IntelliSense* | Gray ghost text suggestions as you type | Based on history |
+| *ListView* | Colorful dropdown menu of predictions | ~F2~ to toggle |
+| *Enhanced History Search* | Interactive ~Ctrl+R~ like bash/zsh | ~Ctrl+R~ / ~Ctrl+S~ |
+| *Dynamic Help* | Inline command help without leaving terminal | ~F1~ |
+| *MenuComplete* | Visual tab completion menu | ~Tab~ |
+| *Syntax Highlighting* | Real-time color-coded commands | Automatic |
+
+* 1. Predictive IntelliSense (Ghost Text)
+
+As you type, PS7 shows suggestions from your history as dimmed gray text:
+
+#+begin_example
+PS> Get-ChildItem -Rec
+                ^^^^^^^^
+                (gray = prediction from history)
+#+end_example
+
+** Key Bindings
+
+| Key | Action |
+|-----|--------|
+| ~→~ (Right Arrow) | Accept entire suggestion |
+| ~Ctrl+→~ | Accept word-by-word |
+| ~Escape~ | Clear suggestion |
+
+** Configuration
+
+#+begin_src powershell
+# Enable predictions
+Set-PSReadLineOption -PredictionSource History
+
+# PS 7.1+: Include plugins too (Azure, etc.)
+Set-PSReadLineOption -PredictionSource HistoryAndPlugin
+
+# Change prediction color (default is light gray)
+Set-PSReadLineOption -Colors @{ 
+    InlinePrediction = '#74b4f7'      # Light blue
+    # or use ANSI: InlinePrediction = "$([char]0x1b)[36;7;238m"
+}
+#+end_src
+
+* 2. ListView Mode (Colorful Dropdown)
+
+The "advanced Ctrl+R" experience — a dropdown list below your typing line instead of inline text.
+
+** Toggle Views
+
+| Key | Action |
+|-----|--------|
+| ~F2~ | Switch between ~InlineView~ ↔ ~ListView~ |
+
+** In ListView Mode
+
+| Key | Action |
+|-----|--------|
+| ~↑~ / ~↓~ | Navigate suggestions |
+| ~Enter~ | Accept selected suggestion |
+| ~Escape~ | Close list, keep original text |
+| ~Ctrl+Z~ | Revert to original line |
+
+** Set as Default
+
+#+begin_src powershell
+Set-PSReadLineOption -PredictionViewStyle ListView
+#+end_src
+
+** ListView Colors
+
+#+begin_src powershell
+Set-PSReadLineOption -Colors @{
+    ListPrediction         = 'DarkGray'   # The ">" character and source
+    ListPredictionSelected = 'DarkGreen'  # Highlighted selection
+}
+#+end_src
+
+* 3. Enhanced History Search (Ctrl+R)
+
+Interactive reverse search — enhanced bash/zsh-style with colors.
+
+| Key | Action |
+|-----|--------|
+| ~Ctrl+R~ | Start reverse search (backward through history) |
+| ~Ctrl+S~ | Search forward (after going back too far) |
+| Type to filter | Narrow results as you type |
+
+* 4. Dynamic Help (F1)
+
+Get inline help without losing your place in the terminal.
+
+Press ~F1~ while typing a command:
+
+#+begin_example
+PS> Get-ChildItem [press F1]
+┌─────────────────────────────────────────────────────────────┐
+│ Get-ChildItem [[-Path] <string[]>] [-Filter <string>]      │
+│                                                             │
+│ Gets the items and child items in one or more specified...  │
+└─────────────────────────────────────────────────────────────┘
+#+end_example
+
+* 5. Visual Tab Completion (MenuComplete)
+
+Instead of cycling blindly, see all options in a menu:
+
+#+begin_example
+PS> Get-C
+Get-ChildItem  Get-Command  Get-ComputerInfo  Get-Content
+Get-Credential Get-Culture  Get-Date
+#+end_example
+
+** Enable
+
+#+begin_src powershell
+Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
+#+end_src
+
+* 6. Syntax Highlighting
+
+Real-time color coding — spot errors before running.
+
+| Element | Default Color |
+|---------+---------------|
+| Commands | Yellow |
+| Parameters | Green |
+| Strings | DarkCyan |
+| Numbers | Magenta |
+| Variables | Cyan |
+| Comments | DarkGreen |
+| Operators | White |
+
+** Full Color Customization
+
+#+begin_src powershell
+Set-PSReadLineOption -Colors @{
+    Command          = 'Yellow'
+    Parameter        = 'Green'
+    String           = 'DarkCyan'
+    Number           = 'Magenta'
+    Operator         = 'White'
+    Variable         = 'Cyan'
+    Comment          = 'DarkGreen'
+    InlinePrediction = 'DarkGray'
+    ListPrediction   = 'DarkGray'
+    ListPredictionSelected = 'DarkGreen'
+}
+#+end_src
+
+* 7. Plugin Predictors (PS 7.1+)
+
+Extend predictions beyond history with domain-specific plugins.
+
+** Azure Predictor (Most Popular)
+
+#+begin_src powershell
+# Install
+Install-Module Az.Tools.Predictor -AllowPrerelease
+
+# Add to profile
+Import-Module Az.Tools.Predictor
+Set-PSReadLineOption -PredictionSource HistoryAndPlugin
+#+end_src
+
+Now ~Get-Az~ will suggest common Azure commands even if never typed before.
+
+** Available Sources
+
+| Source | Description |
+|--------+-------------|
+| ~None~ | Disable predictions |
+| ~History~ | Only your command history |
+| ~Plugin~ | Only plugins (PS 7.1+) |
+| ~HistoryAndPlugin~ | Both (recommended) |
+
+* Complete "At Home" Profile
+
+Copy this entire block to your ~$PROFILE~:
+
+#+begin_src powershell
+# ========== PSReadLine Configuration ==========
+
+# Source: History + Plugins (PS 7.1+)
+Set-PSReadLineOption -PredictionSource HistoryAndPlugin
+
+# View: ListView = colorful dropdown, InlineView = gray ghost text
+Set-PSReadLineOption -PredictionViewStyle ListView
+
+# Show parameter tooltips
+Set-PSReadLineOption -ShowToolTips
+
+# Tab completion: MenuComplete = visual menu
+Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
+
+# Word navigation (like bash/readline)
+Set-PSReadLineKeyHandler -Chord 'Ctrl+LeftArrow' -Function BackwardWord
+Set-PSReadLineKeyHandler -Chord 'Ctrl+RightArrow' -Function ForwardWord
+
+# Alternative: Accept suggestion with Ctrl+Space
+Set-PSReadLineKeyHandler -Chord 'Ctrl+Spacebar' -Function AcceptSuggestion
+
+# Colors
+Set-PSReadLineOption -Colors @{
+    Command                = [ConsoleColor]::Yellow
+    Parameter              = [ConsoleColor]::Green
+    String                 = [ConsoleColor]::DarkCyan
+    Number                 = [ConsoleColor]::Magenta
+    Operator               = [ConsoleColor]::White
+    Variable               = [ConsoleColor]::Cyan
+    InlinePrediction       = "$([char]0x1b)[38;5;240m"
+    ListPrediction         = "$([char]0x1b)[38;5;240m"
+    ListPredictionSelected = "$([char]0x1b)[48;5;235m"
+}
+#+end_src
+
+* Quick Reference Card
+
+** Essential Keys
+
+| Feature | Key | Description |
+|---------+-----+-------------|
+| Accept suggestion | ~→~ | Complete with predicted command |
+| Accept word | ~Ctrl+→~ | Accept one word at a time |
+| Toggle view | ~F2~ | Inline ↔ ListView |
+| History search | ~Ctrl+R~ | Interactive reverse search |
+| Search forward | ~Ctrl+S~ | Go forward in search results |
+| Dynamic help | ~F1~ | Show command help inline |
+| Menu complete | ~Tab~ | Visual completion menu |
+| Clear/escape | ~Escape~ | Dismiss suggestions |
+
+** View Modes
+
+| Mode | Appearance | Best For |
+|------+------------+----------|
+| ~InlineView~ | Gray text after cursor | Minimal, distraction-free |
+| ~ListView~ | Dropdown below line | Seeing multiple options |
+
+* Troubleshooting
+
+** Predictions not showing
+
+#+begin_src powershell
+# Check current settings
+Get-PSReadLineOption | Select-Object PredictionSource, PredictionViewStyle
+
+# Verify PSReadLine version (need 2.1+)
+Get-Module PSReadLine | Select-Object Version
+
+# Install/update if needed
+Install-Module PSReadLine -Force -Scope CurrentUser
+#+end_src
+
+** ListView not working
+
+ListView requires ~Windows~ edit mode (default). Check with:
+
+#+begin_src powershell
+Get-PSReadLineOption | Select-Object EditMode
+
+# If set to Emacs or Vi, either:
+Set-PSReadLineOption -EditMode Windows           # Switch to Windows mode
+# OR
+Set-PSReadLineOption -PredictionViewStyle InlineView  # Use InlineView instead
+#+end_src
+
+** Plugins not loading (PS 7.1+)
+
+#+begin_src powershell
+# Check available prediction sources
+Get-PSSubsystem -Kind CommandPredictor
+
+# List loaded predictors
+Get-Command -Module PSReadLine | Where-Object { $_.Name -like '*Predict*' }
+#+end_src
+
+* Resources
+
+- [[https://devblogs.microsoft.com/powershell/announcing-psreadline-2-1-with-predictive-intellisense/][Microsoft: Announcing PSReadLine 2.1+ with Predictive IntelliSense]]
+- [[https://devblogs.microsoft.com/powershell/psreadline-2-2-ga/][Microsoft: PSReadLine 2.2 GA Announcement]]
+- [[https://github.com/PowerShell/PSReadLine][PSReadLine GitHub Repository]]
+- [[https://www.powershellgallery.com/packages/PSReadLine][PowerShell Gallery: PSReadLine]]

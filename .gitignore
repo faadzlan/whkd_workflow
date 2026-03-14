@@ -1,0 +1,24 @@
+# Screenshots (may contain personal info)
+sources/screenshots/
+*.png
+*.jpg
+*.jpeg
+
+# Emacs
+*~
+\#*\#
+*.elc
+
+# PowerShell history/logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Private notes (may contain personal workflow details)
+FLIGHT_LOG.org
+FLIGHT_LOG_*.org
+
+# Local config overrides (keep personal settings local)
+projects.json.local

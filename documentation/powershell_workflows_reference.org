@@ -1,0 +1,483 @@
+#+title: PowerShell Workflows - Complete Reference Guide
+#+subtitle: Quick reference for all automation scripts and shortcuts
+
+* Quick Start
+
+** Loading the Workflows
+
+Load all shortcuts into your current PowerShell session:
+#+begin_src powershell
+# Navigate to project
+cd C:\Users\<USERNAME>\Documents\whkd_setup
+
+# Load all workflows (the dot is required!)
+. .\tools\workflows\Load-WorkflowProfile.ps1
+#+end_src
+
+** Auto-Load on Every PowerShell Session
+
+Add to your PowerShell profile (~/.bashrc equivalent):
+#+begin_src powershell
+notepad $PROFILE
+
+# Add this line at the end:
+. C:\Users\faadz\Documents\whkd_setup\tools\workflows\Load-WorkflowProfile.ps1
+#+end_src
+
+* Command Reference
+
+** Navigation & Projects
+
+| Command   | Arguments   | Description                      | Example            |
+|-----------+-------------+----------------------------------+--------------------|
+| ~proj~    | ~<name>~    | Jump to project, colorized listing | ~proj whkd~        |
+| ~proj~    | ~<name> -e~ | Open project in File Explorer    | ~proj of -e~       |
+| ~proj~    | ~<name> -t~ | Open project in Windows Terminal | ~proj drive -t~    |
+| ~proj~    | ~<name> -w~ | Open project in WSL terminal     | ~proj of -w~       |
+| ~proj~    | ~<name> -m~ | Open Emacs at project (WSL)      | ~proj projects -m~ |
+| ~home~    | -           | Go to home directory             | ~home~             |
+| ~docs~    | -           | Go to Documents                  | ~docs~             |
+| ~dl~      | -           | Go to Downloads                  | ~dl~               |
+| ~desktop~ | -           | Go to Desktop                    | ~desktop~          |
+
+*** Pre-configured Projects
+
+| Alias        | Path                                  |
+|--------------+---------------------------------------|
+| ~whkd~       | ~C:\Users\faadz\Documents\whkd_setup~ |
+| ~drive~      | ~G:\My Drive~                         |
+| ~projects~   | ~G:\My Drive\Research~                |
+| ~of~, ~foam~ | ~G:\My Drive\Projects\OpenFOAM~       |
+
+*** Adding Your Own Projects
+
+Edit ~tools/workflows/projects.json~ and add your project to the ~projects~ object:
+#+begin_src json
+{
+  "projects": {
+    "whkd": {
+      "path": "~\\Documents\\whkd_setup",
+      "description": "Windows Hotkey Daemon setup project"
+    },
+    ...
+    "thesis": {
+      "path": "G:\\My Drive\\Academic\\Thesis",
+      "description": "PhD thesis work"
+    },
+    "teaching": {
+      "path": "G:\\My Drive\\Teaching\\2024",
+      "description": "Course materials"
+    }
+  }
+}
+#+end_src
+
+The ~proj~ command automatically picks up changes from this JSON file (single source of truth).
+
+** Daily Workflow
+
+| Command | Description | Notes |
+|---------+-------------+-------|
+| ~work~ | Start daily environment | Opens Desktop 2/3 layout |
+| ~work <path>~ | Start with specific project | ~work "G:\My Drive\Projects\Today"~ |
+| ~bye~ | Close all windows | Graceful shutdown cleanup |
+| ~clean-dl~ | Archive old Downloads | Interactive by default |
+| ~clean-dl -AutoArchive~ | Archive without prompting | For scheduled tasks |
+
+** System Monitoring
+
+| Command | Description | Bash Equivalent |
+|---------+-------------|-----------------|
+| ~syshealth~ | Full system dashboard | ~top~ + ~free~ + ~df -h~ |
+| ~mem~ | Top 10 memory consumers | ~ps aux --sort=-%mem~ |
+| ~cpu~ | Top 10 CPU consumers | ~ps aux --sort=-%cpu~ |
+
+*** syshealth Output Sections
+
+1. *Memory Usage* - Total/Used/Free with color-coded status (Green < 75% < Yellow < 90% < Red)
+2. *Top Memory Consumers* - Which processes are eating RAM
+3. *CPU Usage* - Current load percentage
+4. *Disk Space* - Like ~df -h~ for all drives
+5. *Startup Programs* - What runs at boot
+6. *Network* - IP address and connectivity status
+
+** Settings Shortcuts
+
+| Command | Opens | Why Use It |
+|---------+-------+------------|
+| ~bt~ | Bluetooth settings | Connect headphones/mouse quickly |
+| ~vol~ | Sound settings | Fix audio for meetings/OBS |
+| ~wifi~ | Network settings | Troubleshoot connection |
+| ~disp~ | Display settings | Multi-monitor setup |
+| ~startup-apps~ | Startup apps | Manage what runs at boot |
+| ~power~ | Power & sleep | Battery/settings |
+
+** WSL Bridge
+
+| Command | Arguments | Description |
+|---------+-----------+-------------|
+| ~wsl-path~ | ~[path]~ | Convert Windows → WSL path |
+| ~win-path~ | ~<wsl-path>~ | Convert WSL → Windows path |
+| ~cp-wsl~ | ~[path]~ | Copy WSL path to clipboard |
+| ~cp-win~ | ~[path]~ | Copy Windows path to clipboard |
+| ~wsl-here~ | ~[cmd]~ | Run command in WSL at current dir |
+
+*** Path Conversion Examples
+
+#+begin_src powershell
+# Convert current directory to WSL format
+wsl-path
+# Output: /mnt/c/Users/faadz/Documents
+
+# Convert specific path
+wsl-path "G:\My Drive\Projects"
+# Output: /mnt/g/My Drive/Projects
+
+# Copy to clipboard for pasting into WSL terminal
+cp-wsl
+# "Copied WSL path: /mnt/c/Users/faadz/Documents"
+#+end_src
+
+** File Utilities
+
+| Command | Arguments | Description | Bash Equivalent |
+|---------+-----------+-------------|-----------------|
+| ~touch~ | ~<file>~ | Create file or update timestamp | ~touch~ |
+| ~which~ | ~<cmd>~ | Find command location | ~which~ |
+| ~findf~ | ~<name> [path]~ | Find files by name | ~find~ + ~grep~ |
+
+* Individual Scripts
+
+** Start-WorkEnvironment.ps1
+
+Opens and positions your daily workspace.
+
+*** What It Does
+1. Switches to Desktop 2 using VirtualDesktop module
+2. Opens 2 File Explorers stacked on the left
+3. Opens Windows Terminal on the right half
+4. Switches to Desktop 3
+5. Opens Emacs (WSL) at project root (detached)
+6. Returns to Desktop 2
+
+*** Parameters
+
+| Parameter | Type | Default | Description |
+|-----------+------+---------+-------------|
+| ~-ProjectPath~ | string | ~G:\My Drive\Projects~ | Project directory to open |
+| ~-SkipTerminal~ | switch | ~$false~ | Don't open Windows Terminal |
+| ~-SkipExplorer~ | switch | ~$false~ | Don't open File Explorers |
+| ~-SkipEmacs~ | switch | ~$false~ | Don't open Emacs |
+
+*** Examples
+
+#+begin_src powershell
+# Default usage
+.\tools\workflows\Start-WorkEnvironment.ps1
+
+# Today's specific project
+.\tools\workflows\Start-WorkEnvironment.ps1 -ProjectPath "G:\My Drive\Projects\OpenFOAM\Case1"
+
+# Just the terminal and explorers, no Emacs
+.\tools\workflows\Start-WorkEnvironment.ps1 -SkipEmacs
+#+end_src
+
+** Close-AllWindows.ps1
+
+Gracefully closes all open application windows.
+
+*** Parameters
+
+| Parameter | Type | Default | Description |
+|-----------+------+---------+-------------|
+| ~-Exclude~ | string[] | ~@("explorer", "whkd")~ | Processes to keep running |
+| ~-Force~ | switch | ~$false~ | Kill without asking |
+
+*** Examples
+
+#+begin_src powershell
+# Normal usage (graceful close)
+.\tools\workflows\Close-AllWindows.ps1
+
+# Also close explorer.exe
+.\tools\workflows\Close-AllWindows.ps1 -Exclude @("whkd")
+
+# Force kill everything (except whkd)
+.\tools\workflows\Close-AllWindows.ps1 -Force
+#+end_src
+
+** Clear-Downloads.ps1
+
+Archives old Downloads files to prevent Explorer hangs.
+
+*** How It Works
+- Finds files older than N days (default: 30)
+- Moves them to ~Downloads\_Archive\YYYY-MM-DD\~
+- Preserves folder structure
+- Removes empty directories
+
+*** Parameters
+
+| Parameter | Type | Default | Description |
+|-----------+------+---------+-------------|
+| ~-DaysOld~ | int | ~30~ | Archive files older than this |
+| ~-AutoArchive~ | switch | ~$false~ | Skip confirmation prompt |
+| ~-WhatIf~ | switch | ~$false~ | Preview only, don't move |
+
+*** Examples
+
+#+begin_src powershell
+# Interactive mode (shows what will be moved, asks confirmation)
+.\tools\workflows\Clear-Downloads.ps1
+
+# Preview what would be archived
+.\tools\workflows\Clear-Downloads.ps1 -WhatIf
+
+# Archive files older than 7 days without asking
+.\tools\workflows\Clear-Downloads.ps1 -DaysOld 7 -AutoArchive
+#+end_src
+
+*** Scheduling
+
+Run weekly via Task Scheduler:
+#+begin_src powershell
+schtasks /create /tn "Weekly Downloads Cleanup" /tr "powershell.exe -File `"C:\Users\faadz\Documents\whkd_setup\tools\workflows\Clear-Downloads.ps1`" -AutoArchive" /sc weekly /d SUN /st 18:00
+#+end_src
+
+** Show-SystemHealth.ps1
+
+Dashboard showing system performance metrics.
+
+*** Parameters
+
+| Parameter | Type | Description |
+|-----------+------+-------------|
+| ~-ShowAllProcesses~ | switch | Show top 20 processes instead of 10 |
+
+*** Examples
+
+#+begin_src powershell
+# Quick health check
+.\tools\workflows\Show-SystemHealth.ps1
+
+# More detailed process list
+.\tools\workflows\Show-SystemHealth.ps1 -ShowAllProcesses
+#+end_src
+
+** Open-QuickSettings.ps1
+
+Opens Windows Settings pages directly.
+
+*** Parameters
+
+| Parameter | Values | Description |
+|-----------+--------+-------------|
+| ~-Setting~ | ~Bluetooth~, ~Audio~, ~Display~, ~Network~, ~Power~, ~Storage~, ~Startup~, ~Notifications~, ~DefaultApps~, ~Privacy~, ~Update~, ~All~ | Which settings page to open |
+
+*** Examples
+
+#+begin_src powershell
+# Show all available settings
+.\tools\workflows\Open-QuickSettings.ps1 -Setting All
+
+# Open Bluetooth
+.\tools\workflows\Open-QuickSettings.ps1 -Setting Bluetooth
+
+# The shortcuts (bt, vol, etc.) are more convenient
+#+end_src
+
+** Go-ToProject.ps1
+
+Bookmark-based project navigation.
+
+*** Parameters
+
+| Parameter | Type | Description |
+|-----------+------+-------------|
+| ~-ProjectName~ | string | Project alias to navigate to |
+| ~-Explorer~ | switch | Open in File Explorer |
+| ~-Terminal~ | switch | Open in Windows Terminal |
+| ~-WSL~ | switch | Open in WSL terminal |
+| ~-Emacs~ | switch | Open Emacs at project root |
+| ~-List~ | switch | Show all available projects |
+
+*** Examples
+
+#+begin_src powershell
+# List all projects
+.\tools\workflows\Go-ToProject.ps1 -List
+
+# Jump to project (change directory)
+.\tools\workflows\Go-ToProject.ps1 -ProjectName whkd
+
+# Open in File Explorer
+.\tools\workflows\Go-ToProject.ps1 -ProjectName of -Explorer
+
+# Open Emacs (WSL) at project
+.\tools\workflows\Go-ToProject.ps1 -ProjectName projects -Emacs
+#+end_src
+
+** wsl-bridge.ps1
+
+WSL-Windows integration utilities.
+
+*** Functions
+
+| Function | Description |
+|----------+-------------|
+| ~ConvertTo-WSLPath~ | Convert Windows path → WSL path |
+| ~ConvertTo-WindowsPath~ | Convert WSL path → Windows path |
+| ~Copy-WSLPath~ | Copy WSL path to clipboard |
+| ~Copy-WindowsPath~ | Copy Windows path to clipboard |
+| ~Open-WSLInExplorer~ | Open WSL directory in Windows Explorer |
+| ~Invoke-InWSL~ | Run command in WSL at current directory |
+| ~Get-WSLStatus~ | Show WSL distribution status |
+
+* Common Workflows
+
+** Morning Startup
+
+#+begin_src powershell
+# Load workflows (if not in profile)
+. C:\Users\faadz\Documents\whkd_setup\tools\workflows\Load-WorkflowProfile.ps1
+
+# Start work environment
+work
+
+# Or with specific project:
+work "G:\My Drive\Projects\OpenFOAM\NewCase"
+#+end_src
+
+** Deep Navigation
+
+#+begin_src powershell
+# Quick jump to OpenFOAM
+proj of
+
+# Open in WSL terminal for command-line work
+proj of -w
+
+# Open Emacs for editing
+proj of -m
+
+# Open in Explorer for file management
+proj of -e
+#+end_src
+
+** System Running Slow
+
+#+begin_src powershell
+# Check what's eating memory
+syshealth
+
+# Or just the top memory consumers
+mem
+
+# Kill Chrome if it's the culprit
+Stop-Process -Name chrome -Force
+#+end_src
+
+** Before Shutdown
+
+#+begin_src powershell
+# Close all windows gracefully
+bye
+#+end_src
+
+** Audio/Bluetooth Issues
+
+#+begin_src powershell
+# Quick audio settings for OBS/meetings
+vol
+
+# Connect Bluetooth headphones
+bt
+#+end_src
+
+** WSL Workflow
+
+#+begin_src powershell
+# Navigate to Windows project folder
+cd G:\My Drive\Projects\MyProject
+
+# Copy WSL-formatted path to paste in WSL terminal
+cp-wsl
+
+# Or just open WSL here
+wsl-here
+
+# Open current folder in Explorer (from WSL)
+Open-WSLInExplorer
+#+end_src
+
+* Troubleshooting
+
+** "Command not found" after loading profile
+
+Make sure you used the *dot*:
+#+begin_src powershell
+# WRONG - runs in separate scope, functions disappear
+.\tools\workflows\Load-WorkflowProfile.ps1
+
+# RIGHT - sources into current scope
+. .\tools\workflows\Load-WorkflowProfile.ps1
+#+end_src
+
+** VirtualDesktop module not working
+
+#+begin_src powershell
+# Check if installed
+Get-Module -ListAvailable -Name VirtualDesktop
+
+# Install if missing
+Install-Module -Name VirtualDesktop -Force -Scope CurrentUser
+#+end_src
+
+** Get-ChildItemColor module not working
+
+The ~proj~ command uses Get-ChildItemColor for colorized directory listings.
+
+#+begin_src powershell
+# Check if installed
+Get-Module -ListAvailable -Name Get-ChildItemColor
+
+# Install if missing
+Install-Module -Name Get-ChildItemColor -Scope CurrentUser
+#+end_src
+
+** Emacs doesn't open
+
+Check that your ~emc~ function works:
+#+begin_src powershell
+# Test directly
+emc
+
+# If that works, the script should work too
+#+end_src
+
+** Window positioning not working
+
+Window positioning requires the window to be ready. If windows aren't moving:
+1. Close other heavy applications
+2. Increase the ~Start-Sleep~ delays in the script
+3. Run the script again
+
+* Modifying Scripts
+
+All scripts are in ~tools/workflows/~:
+
+| Script | Purpose |
+|--------+---------|
+| ~Load-WorkflowProfile.ps1~ | Master loader with all shortcuts |
+| ~Start-WorkEnvironment.ps1~ | Morning startup automation |
+| ~Close-AllWindows.ps1~ | Shutdown cleanup |
+| ~Clear-Downloads.ps1~ | Downloads maintenance |
+| ~Show-SystemHealth.ps1~ | System monitoring |
+| ~Open-QuickSettings.ps1~ | Settings shortcuts |
+| ~Go-ToProject.ps1~ | Project navigation |
+| ~wsl-bridge.ps1~ | WSL integration |
+
+* Resources
+
+- [[https://github.com/MScholtes/VirtualDesktop][VirtualDesktop Module]] - Virtual desktop manipulation
+- [[https://ss64.com/ps/][SS64 PowerShell Reference]] - Command reference

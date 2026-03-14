@@ -1,0 +1,319 @@
+# ============================================================================
+# Modern Zsh Configuration - PowerShell 7-like Experience
+# Using Zinit (fast plugin manager) instead of Oh My Zsh
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# 1. ZINIT SETUP
+# ----------------------------------------------------------------------------
+
+# Set Zinit home
+ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+
+# Download Zinit if not present
+if [[ ! -d $ZINIT_HOME ]]; then
+    mkdir -p "$(dirname $ZINIT_HOME)"
+    git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+fi
+
+# Source Zinit
+source "${ZINIT_HOME}/zinit.zsh"
+
+# ----------------------------------------------------------------------------
+# 2. PLUGINS (loaded in order)
+# ----------------------------------------------------------------------------
+
+# Prompt theme - Powerlevel10k (fast, customizable)
+zinit ice depth=1; zinit light romkatv/powerlevel10k
+
+# Syntax highlighting (MUST be before autosuggestions)
+zinit light zdharma-continuum/fast-syntax-highlighting
+
+# Autosuggestions - gray ghost text like PS7
+zinit light zsh-users/zsh-autosuggestions
+
+# FZF integration - fuzzy finder
+zinit pack"binary+keys" for fzf
+
+# FZF-tab - replace tab completion with fuzzy searchable menu
+zinit light Aloxaf/fzf-tab
+
+# Additional completions
+zinit light zsh-users/zsh-completions
+
+# ----------------------------------------------------------------------------
+# 3. AUTOSUGGESTIONS CONFIGURATION (PS7-like ghost text)
+# ----------------------------------------------------------------------------
+
+# Suggest from history first, then completion
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+
+# Style: dim gray ghost text (like PS7)
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=240'
+
+# Bindings to accept suggestions
+# Right Arrow = accept entire suggestion (default)
+bindkey '^ ' autosuggest-accept           # Ctrl+Space also accepts
+bindkey '^f' forward-word                 # Ctrl+F = accept one word
+
+# ----------------------------------------------------------------------------
+# 4. FZF CONFIGURATION (Enhanced history search, file finder)
+# ----------------------------------------------------------------------------
+
+# Enable fuzzy completion and key bindings
+export FZF_DEFAULT_OPTS="
+  --height 50%
+  --layout=reverse
+  --border
+  --info=inline
+  --prompt='∼ '
+  --pointer='▶'
+  --marker='✓'
+  --color=bg+:#363a4f,bg:#24273a,spinner:#f4dbd6,hl:#ed8796
+  --color=fg:#cad3f5,header:#8bd5ca,info:#c6a0f6,pointer:#f4dbd6
+  --color=marker:#a6da95,fg+:#cad3f5,prompt:#8aadf4,hl+:#ed8796
+  --color=selected-bg:#494d64
+  --multi
+"
+
+# Use fd for faster file finding (if installed)
+if command -v fd &> /dev/null; then
+  export FZF_DEFAULT_COMMAND='fd --type f --hidden --strip-cwd-prefix --exclude .git'
+  export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+  export FZF_ALT_C_COMMAND='fd --type d --hidden --strip-cwd-prefix --exclude .git'
+fi
+
+# Preview window configuration
+export FZF_CTRL_T_OPTS="
+  --preview 'bat --color=always --line-range :500 {}'
+  --preview-window up:60%:wrap
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'
+"
+
+export FZF_CTRL_R_OPTS="
+  --preview 'echo {}' --preview-window up:3:wrap
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | xclip -selection clipboard)+abort'
+  --header 'Press CTRL-Y to copy command into clipboard'
+"
+
+export FZF_ALT_C_OPTS="
+  --preview 'eza --tree --level=2 --color=always {}'
+  --preview-window right:50%
+"
+
+# ----------------------------------------------------------------------------
+# 5. FZF-TAB CONFIGURATION (Visual tab completion menu)
+# ----------------------------------------------------------------------------
+
+# Disable default zsh menu completion
+zstyle ':completion:*' menu no
+
+# Enable fzf-tab
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza --tree --level=1 --color=always $realpath'
+zstyle ':fzf-tab:complete:ls:*' fzf-preview 'eza --tree --level=1 --color=always $realpath'
+zstyle ':fzf-tab:complete:cat:*' fzf-preview 'bat --color=always --line-range :500 $realpath'
+zstyle ':fzf-tab:complete:bat:*' fzf-preview 'bat --color=always --line-range :500 $realpath'
+
+# Git completions with preview
+zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview \
+  'git diff --color=always $word | delta 2>/dev/null || git diff --color=always $word'
+zstyle ':fzf-tab:complete:git-log:*' fzf-preview 'git log --color=always $word'
+zstyle ':fzf-tab:complete:git-help:*' fzf-preview 'git help $word | bat -plman --color=always'
+zstyle ':fzf-tab:complete:git-show:*' fzf-preview \
+  'case "$group" in
+  "commit tag") git show --color=always $word ;;
+  *) git show --color=always $word | delta ;;
+  esac'
+
+# Switch group using < and >
+zstyle ':fzf-tab:*' switch-group '<' '>'
+
+# ----------------------------------------------------------------------------
+# 6. COMPLETION SYSTEM
+# ----------------------------------------------------------------------------
+
+# Initialize completion
+autoload -Uz compinit
+compinit -d ~/.cache/zcompdump
+
+# Completion settings
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+zstyle ':completion:*' rehash true
+zstyle ':completion:*' verbose true
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*:descriptions' format '%F{green}-- %d --%f'
+zstyle ':completion:*:corrections' format '%F{yellow}!- %d (errors: %e) -!%f'
+zstyle ':completion:*:messages' format '%F{purple} -- %d --%f'
+zstyle ':completion:*:warnings' format '%F{red}-- no matches found --%f'
+
+# ----------------------------------------------------------------------------
+# 7. HISTORY CONFIGURATION (Shared with bash via HISTFILE)
+# ----------------------------------------------------------------------------
+
+# History file
+HISTFILE=~/.zsh_history
+HISTSIZE=50000
+SAVEHIST=50000
+
+# History options
+setopt EXTENDED_HISTORY          # Save timestamp and duration
+setopt SHARE_HISTORY             # Share history between sessions
+setopt HIST_EXPIRE_DUPS_FIRST    # Expire duplicates first
+setopt HIST_IGNORE_DUPS          # Don't record duplicates
+setopt HIST_IGNORE_ALL_DUPS      # Remove older duplicate
+setopt HIST_FIND_NO_DUPS         # Don't show duplicates in search
+setopt HIST_IGNORE_SPACE         # Don't record commands starting with space
+setopt HIST_SAVE_NO_DUPS         # Don't write duplicates
+setopt HIST_REDUCE_BLANKS        # Remove superfluous blanks
+
+# ----------------------------------------------------------------------------
+# 8. KEY BINDINGS
+# ----------------------------------------------------------------------------
+
+# Emacs key bindings (like bash)
+bindkey -e
+
+# Word navigation (Ctrl+Arrow)
+bindkey '^[[1;5C' forward-word     # Ctrl+Right
+bindkey '^[[1;5D' backward-word    # Ctrl+Left
+
+# Line navigation
+bindkey '^[[H' beginning-of-line   # Home
+bindkey '^[[F' end-of-line         # End
+
+# Delete
+bindkey '^[[3~' delete-char        # Delete key
+
+# History search (type partial command, then up/down)
+autoload -U up-line-or-beginning-search
+autoload -U down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey '^[[A' up-line-or-beginning-search      # Up arrow
+bindkey '^[[B' down-line-or-beginning-search    # Down arrow
+
+# ----------------------------------------------------------------------------
+# 9. ALIASES (Modern replacements)
+# ----------------------------------------------------------------------------
+
+# File listing - eza (better than ls)
+if command -v eza &> /dev/null; then
+  alias ls='eza --icons --group-directories-first'
+  alias l='eza --icons --group-directories-first'
+  alias la='eza --icons --group-directories-first -a'
+  alias ll='eza --icons --group-directories-first -l'
+  alias lla='eza --icons --group-directories-first -la'
+  alias lt='eza --icons --group-directories-first --tree'
+  alias lta='eza --icons --group-directories-first --tree -a'
+  alias ltl='eza --icons --group-directories-first --tree -L'
+else
+  alias ls='ls --color=auto --group-directories-first'
+  alias la='ls -A --color=auto'
+  alias ll='ls -l --color=auto'
+  alias lla='ls -lA --color=auto'
+fi
+
+# Cat replacement - bat
+if command -v bat &> /dev/null; then
+  alias cat='bat --paging=never'
+  alias catp='bat --paging=never --plain'
+  alias catl='bat --paging=never --language'
+fi
+
+# Zoxide - smart cd
+if command -v zoxide &> /dev/null; then
+  eval "$(zoxide init zsh)"
+  alias cd='z'
+  alias cdi='zi'  # Interactive cd with fzf
+fi
+
+# Git shortcuts
+alias g='git'
+alias ga='git add'
+alias gc='git commit'
+alias gco='git checkout'
+alias gd='git diff'
+alias gds='git diff --staged'
+alias gl='git log --oneline --graph --decorate'
+alias gp='git push'
+alias gs='git status'
+
+# Modern tools
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
+alias mkdir='mkdir -pv'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+# Safety
+alias cp='cp -i'
+alias mv='mv -i'
+alias rm='rm -i'
+
+# ----------------------------------------------------------------------------
+# 10. MISCELLANEOUS SETTINGS
+# ----------------------------------------------------------------------------
+
+# Directory navigation
+setopt AUTO_CD              # Type directory name to cd
+setopt AUTO_PUSHD           # Push old directory to stack
+setopt PUSHD_IGNORE_DUPS    # Don't push duplicates
+setopt PUSHD_SILENT         # Don't print directory stack
+
+# Globbing
+setopt EXTENDED_GLOB        # Extended glob patterns
+setopt GLOB_DOTS            # Include dotfiles in glob
+setopt NO_CASE_GLOB         # Case insensitive glob
+
+# Misc
+setopt NO_BEEP              # No beeping
+setopt INTERACTIVE_COMMENTS # Allow comments in interactive shell
+setopt CORRECT              # Spell correction for commands
+setopt CORRECT_ALL          # Spell correction for arguments
+
+# ----------------------------------------------------------------------------
+# 11. WSL-SPECIFIC SETTINGS
+# ----------------------------------------------------------------------------
+
+if [[ -n "$WSL_DISTRO_NAME" ]] || grep -q Microsoft /proc/version 2>/dev/null; then
+  # Windows interop improvements
+  alias winhome='cd /mnt/c/Users/$WINUSER 2>/dev/null || cd /mnt/c/Users/$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d "\r")'
+  
+  # Use Windows VS Code if available
+  if command -v code &> /dev/null; then
+    export EDITOR='code --wait'
+  fi
+  
+  # Fix Windows path issues
+  export PATH="$(echo "$PATH" | tr ':' '\n' | grep -v '/mnt/c/Windows' | tr '\n' ':')"
+fi
+
+# ----------------------------------------------------------------------------
+# 12. POWERLEVEL10K CONFIGURATION
+# ----------------------------------------------------------------------------
+
+# Enable Powerlevel10k instant prompt (speeds up startup)
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# To customize prompt, run p10k configure or edit ~/.p10k.zsh
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# ----------------------------------------------------------------------------
+# 13. LOCAL OVERRIDES
+# ----------------------------------------------------------------------------
+
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+# ----------------------------------------------------------------------------
+# PRINT WELCOME MESSAGE
+# ----------------------------------------------------------------------------
+
+echo ""
+echo "  Welcome to Zsh with PowerShell 7-like features!"
+echo "  Key bindings: Ctrl+R (history), Ctrl+T (files), Alt+C (cd)"
+echo ""
