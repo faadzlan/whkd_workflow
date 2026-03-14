@@ -26,10 +26,18 @@ $script:ProjectsMeta = $null
 
 function Resolve-ProjectPath {
     param([string]$Path)
-    # Resolve ~ to USERPROFILE for Windows paths
-    # WSL paths (/home/user/... or ~/...) are kept as-is
-    if ($Path -match '^~') {
-        $Path = $Path -replace '^~', $env:USERPROFILE
+    # Resolve ~ to USERPROFILE for Windows paths only
+    # WSL paths (~/...) are kept as-is for WSL to resolve
+    # Windows paths use ~\, WSL paths use ~/
+    if ($Path -match '^~\\') {
+        # Windows path: ~\Documents\...
+        $Path = $Path -replace '^~\\', "$env:USERPROFILE\"
+    } elseif ($Path -match '^~/') {
+        # WSL path: ~/Documents/... - keep as-is
+        # Do not convert, let WSL resolve it
+    } elseif ($Path -match '^~$') {
+        # Just ~ by itself - treat as Windows
+        $Path = $env:USERPROFILE
     }
     return $Path
 }

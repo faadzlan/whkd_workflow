@@ -29,9 +29,12 @@ $projectsConfigPath = Join-Path $scriptDir "projects.json"
 
 function Resolve-ProjectPath {
     param([string]$Path)
-    # Resolve ~ to USERPROFILE for Windows paths
-    if ($Path -match '^~') {
-        $Path = $Path -replace '^~', $env:USERPROFILE
+    # Resolve ~ to USERPROFILE for Windows paths only
+    # WSL paths (~/...) are kept as-is for WSL to resolve
+    if ($Path -match '^~\\') {
+        $Path = $Path -replace '^~\\', "$env:USERPROFILE\"
+    } elseif ($Path -match '^~$') {
+        $Path = $env:USERPROFILE
     }
     return $Path
 }

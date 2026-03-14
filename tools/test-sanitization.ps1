@@ -50,8 +50,12 @@ function Test-Condition {
 
 function Resolve-ProjectPath {
     param([string]$Path)
-    if ($Path -match '^~') {
-        $Path = $Path -replace '^~', $env:USERPROFILE
+    # Resolve ~ to USERPROFILE for Windows paths only
+    # WSL paths (~/...) are kept as-is for WSL to resolve
+    if ($Path -match '^~\\') {
+        $Path = $Path -replace '^~\\', "$env:USERPROFILE\"
+    } elseif ($Path -match '^~$') {
+        $Path = $env:USERPROFILE
     }
     return $Path
 }
@@ -85,8 +89,8 @@ Test-Condition "Windows paths without ~ pass through" {
 
 Test-Condition "WSL paths pass through unchanged" {
     $result = Resolve-ProjectPath -Path "~/Documents/project"
-    # ~/ in WSL context should become ~\ in Windows
-    $result -match "~"
+    # ~/ should remain unchanged for WSL
+    $result -eq "~/Documents/project"
 }
 
 #==============================================================================
