@@ -74,7 +74,7 @@ function Get-DefaultProjectPath {
         }
     }
     # Ultimate fallback
-    return "$env:USERPROFILE\Documents"
+    return "$env:USERPROFILE\Projects"
 }
 
 # Set default if not provided

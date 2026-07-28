@@ -8,7 +8,7 @@
 Load all shortcuts into your current PowerShell session:
 #+begin_src powershell
 # Navigate to project
-cd C:\Users\<USERNAME>\Documents\whkd_workflow
+cd C:\Users\<USERNAME>\Projects\whkd_workflow
 
 # Load all workflows (the dot is required!)
 . .\tools\workflows\Load-WorkflowProfile.ps1
@@ -21,7 +21,7 @@ Add to your PowerShell profile (~/.bashrc equivalent):
 notepad $PROFILE
 
 # Add this line at the end:
-. C:\Users\faadz\Documents\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1
+. C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1
 #+end_src
 
 * Command Reference
@@ -36,14 +36,14 @@ notepad $PROFILE
 | ~proj~    | ~<name> -w~ | Open project in WSL terminal     | ~proj of -w~       |
 | ~proj~    | ~<name> -m~ | Open Emacs at project (WSL)      | ~proj projects -m~ |
 | ~home~    | -           | Go to home directory             | ~home~             |
-| ~docs~    | -           | Go to Documents                  | ~docs~             |
+| ~docs~    | -           | Go to Projects                   | ~docs~             |
 | ~dl~      | -           | Go to Downloads                  | ~dl~               |
 
 *** Pre-configured Projects
 
 | Alias        | Path                                  |
 |--------------+---------------------------------------|
-| ~whkd~       | ~C:\Users\faadz\Documents\whkd_workflow~ |
+| ~whkd~       | ~C:\Users\faadz\Projects\whkd_workflow~ |
 | ~drive~      | ~G:\My Drive~                         |
 | ~projects~   | ~G:\My Drive\Research~                |
 | ~of~, ~foam~ | ~G:\My Drive\Projects\OpenFOAM~       |
@@ -55,7 +55,7 @@ Edit ~tools/workflows/projects.json~ and add your project to the ~projects~ obje
 {
   "projects": {
     "whkd": {
-      "path": "~\\Documents\\whkd_workflow",
+      "path": "~\\Projects\\whkd_workflow",
       "description": "Windows Hotkey Daemon setup project"
     },
     ...
@@ -240,7 +240,7 @@ Archives old Downloads files to prevent Explorer hangs.
 
 Run weekly via Task Scheduler:
 #+begin_src powershell
-schtasks /create /tn "Weekly Downloads Cleanup" /tr "powershell.exe -File `"C:\Users\faadz\Documents\whkd_workflow\tools\workflows\Clear-Downloads.ps1`" -AutoArchive" /sc weekly /d SUN /st 18:00
+schtasks /create /tn "Weekly Downloads Cleanup" /tr "powershell.exe -File `"C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Clear-Downloads.ps1`" -AutoArchive" /sc weekly /d SUN /st 18:00
 #+end_src
 
 ** Show-SystemHealth.ps1
@@ -338,7 +338,7 @@ WSL-Windows integration utilities.
 
 #+begin_src powershell
 # Load workflows (if not in profile)
-. C:\Users\faadz\Documents\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1
+. C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1
 
 # Start work environment
 work

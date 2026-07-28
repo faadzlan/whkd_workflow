@@ -161,7 +161,7 @@ function Show-TaskMenu {
         }
         "4" {
             # Export to XML
-            $backupPath = "$env:USERPROFILE\Documents\whkd_task_backup.xml"
+            $backupPath = "$env:USERPROFILE\Projects\whkd_task_backup.xml"
             Export-ScheduledTask -TaskName "Restart WHKD" | Out-File $backupPath
             Write-Host "`n✓ Task exported to: $backupPath" -ForegroundColor Green
         }

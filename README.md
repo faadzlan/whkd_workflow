@@ -36,7 +36,7 @@ Or add to your PowerShell profile for auto-load:
 ```powershell
 notepad $PROFILE
 # Add this line:
-. C:\Users\<USERNAME>\Documents\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1
+. C:\Users\<USERNAME>\Projects\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1
 ```
 
 3. Configure your projects in `tools/workflows/projects.json`:

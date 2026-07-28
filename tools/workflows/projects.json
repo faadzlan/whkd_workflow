@@ -1,7 +1,7 @@
 {
   "projects": {
     "whkd": {
-      "path": "~\\Documents\\whkd_workflow",
+      "path": "~\\Projects\\whkd_workflow",
       "description": "Windows Hotkey Daemon setup project"
     },
     "drive": {
