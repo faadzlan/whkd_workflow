@@ -7,7 +7,7 @@
     Like `source ~/.bashrc` in bash.
 
     Add this to your PowerShell profile to auto-load:
-    . C:\Users\faadz\Documents\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1
+    . C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1
 #>
 
 $workflowDir = $PSScriptRoot
@@ -30,7 +30,7 @@ function Resolve-ProjectPath {
     # WSL paths (~/...) are kept as-is for WSL to resolve
     # Windows paths use ~\, WSL paths use ~/
     if ($Path -match '^~\\') {
-        # Windows path: ~\Documents\...
+        # Windows path: ~\Projects\...
         $Path = $Path -replace '^~\\', "$env:USERPROFILE\"
     } elseif ($Path -match '^~/') {
         # WSL path: ~/Documents/... - keep as-is
@@ -170,7 +170,7 @@ function proj {
 
 # Quick directory shortcuts
 function home { Set-Location $env:USERPROFILE }
-function docs { Set-Location "$env:USERPROFILE\Documents" }
+function docs { Set-Location "$env:USERPROFILE\Projects" }
 function dl { Set-Location "$env:USERPROFILE\Downloads" }
 
 # Open Explorer at current or specified directory
@@ -227,7 +227,7 @@ function work {
     }
 }
 function bye { & "$workflowDir\Close-AllWindows.ps1" }
-function clean-dl { & "$workflowDir\Clear-Downloads.ps1" }
+function clean-dl { & "$workflowDir\Clear-Downloads.ps1" @args }
 
 #------------------------------------------------------------------------------
 # 5. WSL BRIDGE
@@ -330,4 +330,4 @@ Write-Host "  findf <name> [path]        - Find files by name" -ForegroundColor 
 Write-Host "`nAdd to your profile for auto-load:" -ForegroundColor Cyan
 Write-Host "  notepad `$PROFILE" -ForegroundColor DarkGray
 Write-Host "  # Add this line:" -ForegroundColor DarkGray
-Write-Host "  . C:\Users\faadz\Documents\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1" -ForegroundColor DarkGray
+Write-Host "  . C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1" -ForegroundColor DarkGray

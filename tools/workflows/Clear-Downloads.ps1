@@ -10,8 +10,7 @@
 [CmdletBinding(SupportsShouldProcess=$true)]
 param(
     [int]$DaysOld = 30,           # Move files older than this
-    [switch]$AutoArchive = $false, # Skip confirmation
-    [switch]$WhatIf               # Preview only
+    [switch]$AutoArchive = $false # Skip confirmation
 )
 
 $Downloads = "$env:USERPROFILE\Downloads"
@@ -66,7 +65,7 @@ if ($oldFiles.Count -gt 10) {
 $archiveDate = Get-Date -Format "yyyy-MM-dd"
 $ArchivePath = "$ArchiveRoot\$archiveDate"
 
-if ($WhatIf) {
+if ($WhatIfPreference) {
     Write-Host "`n[WHATIF] Would move files to: $ArchivePath" -ForegroundColor Magenta
     exit 0
 }
