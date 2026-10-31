@@ -316,21 +316,24 @@ Bookmark-based project navigation.
 .\tools\workflows\Go-ToProject.ps1 -ProjectName projects -Emacs
 #+end_src
 
-** wsl-bridge.ps1
+** WSL Bridge (Load-WorkflowProfile.ps1)
 
-WSL-Windows integration utilities.
+WSL-Windows integration utilities. Formerly a standalone
+=wsl-bridge.ps1= module; retired 2026-07-29 (see [[file:wsl-bridge.org][wsl-bridge.org]]) since it
+was never loaded - these functions live only in
+[[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]] now.
 
 *** Functions
 
-| Function | Description |
-|----------+-------------|
-| ~ConvertTo-WSLPath~ | Convert Windows path → WSL path |
-| ~ConvertTo-WindowsPath~ | Convert WSL path → Windows path |
-| ~Copy-WSLPath~ | Copy WSL path to clipboard |
-| ~Copy-WindowsPath~ | Copy Windows path to clipboard |
-| ~Open-WSLInExplorer~ | Open WSL directory in Windows Explorer |
-| ~Invoke-InWSL~ | Run command in WSL at current directory |
-| ~Get-WSLStatus~ | Show WSL distribution status |
+| Function | Alias | Description |
+|----------+-------+-------------|
+| ~ConvertTo-WSLPath~ | ~wsl-path~ | Convert Windows path → WSL path |
+| ~ConvertTo-WindowsPath~ | ~win-path~ | Convert WSL path → Windows path |
+| ~Copy-WSLPath~ | ~cp-wsl~ | Copy WSL path to clipboard |
+| ~Copy-WindowsPath~ | ~cp-win~ | Copy Windows path to clipboard |
+| (open current dir in Explorer) | ~wsl-explorer~ | Open current directory in Windows Explorer |
+| ~Invoke-InWSL~ | ~wsl-here~ | Run command in WSL at current directory |
+| (WSL status) | ~wsl-status~ | Show WSL distribution status |
 
 * Common Workflows
 
@@ -473,8 +476,10 @@ All scripts are in ~tools/workflows/~:
 | ~Clear-Downloads.ps1~       | Downloads maintenance            |
 | ~Show-SystemHealth.ps1~     | System monitoring                |
 | ~Open-QuickSettings.ps1~    | Settings shortcuts               |
-| ~Go-ToProject.ps1~          | Project navigation               |
-| ~wsl-bridge.ps1~            | WSL integration                  |
+| ~Go-ToProject.ps1~          | Project navigation                |
+| ~Common.ps1~                | Shared helpers (paths, WSL conversion), dot-sourced by the above |
+| ~Show-ProjectPicker.ps1~    | Fuzzy project picker for the =alt + shift + p= hotkey |
+| ~Test-WorkflowSetup.ps1~    | =doctor= - checks for drift (duplicate whkd, whkdrc, modules) |
 
 * Resources
 

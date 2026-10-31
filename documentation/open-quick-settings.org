@@ -1,0 +1,74 @@
+#+title: OPEN-QUICKSETTINGS(1)
+#+subtitle: Jump straight to a Windows Settings page
+
+* NAME
+
+Open-QuickSettings.ps1 - open a Windows Settings page by name, bypassing
+the Settings app's own navigation
+
+* SYNOPSIS
+
+#+begin_src powershell
+Open-QuickSettings.ps1 [[-Setting] <string>]
+#+end_src
+
+* DESCRIPTION
+
+Open-QuickSettings launches a specific Windows Settings page directly
+via its =ms-settings:= URI, the way =xdg-open= dispatches a URI to the
+right handler on Linux. Useful for binding a hotkey (via whkd) straight
+to "open Bluetooth settings" without clicking through the Settings app's
+own menu tree.
+
+Called with no arguments (or =-Setting All=), it lists every recognized
+setting name instead of opening anything.
+
+* OPTIONS
+
+- *-Setting* <string> ::
+  Which Settings page to open. Positional - can be passed without the
+  parameter name. One of: =Bluetooth=, =Audio=, =Display=, =Network=,
+  =Power=, =Storage=, =Startup=, =Notifications=, =DefaultApps=,
+  =Privacy=, =Update=, =All=. Values are validated - anything outside
+  this set is rejected by PowerShell before the script body runs.
+  Default: =All= (lists available settings).
+
+* EXIT STATUS
+
+- *0* :: Always - both "opened a settings page" and "listed available
+  settings" are successful outcomes. An invalid =-Setting= value is
+  rejected by parameter validation, which PowerShell reports as a
+  parameter-binding error rather than a script exit code.
+
+* EXAMPLES
+
+List all available quick-settings names:
+#+begin_src powershell
+.\tools\workflows\Open-QuickSettings.ps1
+#+end_src
+
+Open Bluetooth settings directly:
+#+begin_src powershell
+.\tools\workflows\Open-QuickSettings.ps1 -Setting Bluetooth
+#+end_src
+
+Open Windows Update settings:
+#+begin_src powershell
+.\tools\workflows\Open-QuickSettings.ps1 Update
+#+end_src
+
+* NOTES
+
+- Sourcing the script also defines global =bt=, =vol=, =wifi=, =disp=
+  wrapper functions for the four most-used pages (Bluetooth, Audio,
+  Network, Display) - these are separate, simpler bindings from the
+  same-named functions in [[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]], which additionally
+  expose =startup-apps= and =power=.
+- The full setting → URI table (e.g. =Storage= → =ms-settings:storagesense=)
+  is hardcoded in the script; add an entry there to expose a new page.
+
+* SEE ALSO
+
+[[file:powershell_workflows_reference.org][PowerShell Workflows - Complete Reference Guide]],
+[[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]] (=bt=, =vol=, =wifi=, =disp=, =startup-apps=,
+=power= aliases).

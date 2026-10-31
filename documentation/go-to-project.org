@@ -1,0 +1,129 @@
+#+title: GO-TOPROJECT(1)
+#+subtitle: Bookmarked navigation to deep project folders
+
+* NAME
+
+Go-ToProject.ps1 - jump to a configured project directory, optionally
+opening it in Explorer, Windows Terminal, WSL, or Emacs
+
+* SYNOPSIS
+
+#+begin_src powershell
+Go-ToProject.ps1 [[-ProjectName] <string>] [-Explorer] [-Terminal] [-WSL] [-Emacs] [-List]
+#+end_src
+
+Short aliases match the profile's old =-e=/=-t=/=-w=/=-m= switches:
+=-Explorer= ↔ =-e=, =-Terminal= ↔ =-t=, =-WSL= ↔ =-w=, =-Emacs= ↔ =-m=.
+=proj list= (bare word, no dash) also works as a synonym for =-List=.
+
+* DESCRIPTION
+
+Go-ToProject reads named project shortcuts from =projects.json= (next to
+the script) and jumps to the matching path - the equivalent of shell
+directory bookmarks (=cd -=/=z=/=autojump=), extended to also open the
+target in File Explorer, a new Windows Terminal, a WSL shell, or Emacs
+running inside WSL.
+
+Project names and paths are the single source of truth in
+=projects.json=. This script is the single =proj= implementation
+project-wide (FINDING 7 of the 2026-07 workflow audit) -
+[[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]]'s =proj= function is a one-line wrapper that
+forwards all arguments here, so there is exactly one place path/WSL
+handling can drift.
+
+* OPTIONS
+
+- *-ProjectName* <string> ::
+  Key of the project to jump to, as defined in =projects.json= (case
+  insensitive). Positional - can be passed without the parameter name.
+  Omit (or pass =-List=) to print all available projects instead.
+
+- *-Explorer* ::
+  Open the project path in File Explorer instead of changing directory
+  in the current shell.
+
+- *-Terminal* ::
+  Open the project path in a new Windows Terminal window
+  (=wt -d <path>=).
+
+- *-WSL* ::
+  Open a WSL shell at the project path. Windows paths are converted to
+  =/mnt/<drive>/...= form first; WSL-form project paths are used as-is.
+
+- *-Emacs* ::
+  Launch Emacs directly inside WSL with the project directory as its
+  working directory (no intermediate shell, so no window flash - see
+  FLIGHT-006).
+
+- *-List* ::
+  Print all configured project aliases and their resolved paths, then
+  exit. Implied when =-ProjectName= is omitted.
+
+Only one of =-Explorer=, =-Terminal=, =-WSL=, =-Emacs= should be given at
+a time; if none are given, the default action is =Set-Location= in the
+current session (plus a colorized directory listing via
+=Get-ChildItemColor=).
+
+* EXIT STATUS
+
+- *0* :: Success, or =-List= was shown.
+- *1* :: =-ProjectName= does not match any configured project, or its
+  configured path does not exist on disk.
+
+* EXAMPLES
+
+List all configured projects:
+#+begin_src powershell
+Go-ToProject -List
+#+end_src
+
+Change directory to the whkd_workflow project in the current shell:
+#+begin_src powershell
+Go-ToProject whkd
+#+end_src
+
+Open the OpenFOAM project folder in File Explorer:
+#+begin_src powershell
+Go-ToProject of -Explorer
+#+end_src
+
+Open the WSL-based project in a WSL terminal:
+#+begin_src powershell
+Go-ToProject ssm -WSL
+#+end_src
+
+Open Emacs at the Research projects root:
+#+begin_src powershell
+Go-ToProject projects -Emacs
+#+end_src
+
+* FILES
+
+- =projects.json= (same directory as the script) :: project name → path
+  (and, for WSL projects, =type= / =distro=) mappings. Missing file
+  degrades to an empty project list with a warning rather than an error.
+- =Common.ps1= (same directory) :: dot-sourced for =Resolve-ProjectPath=,
+  =Test-IsWSLPath=, =ConvertTo-WSLPath=, and =Convert-WSLPathToUNC=.
+  Paths beginning =~\= resolve against =%USERPROFILE%=; paths beginning
+  =~/= (WSL-style) are left untouched for WSL itself to resolve.
+
+* NOTES
+
+- Running the script also defines global =proj= and =cdp= wrapper
+  functions in the current session (via =function global:proj=, which
+  writes to global scope regardless of dot-sourcing), both forwarding
+  all arguments to this script. Since [[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]]'s own
+  =proj= now does exactly the same thing, whichever definition is active
+  at any given moment behaves identically - there is no longer a
+  divergent second implementation to accidentally shadow (FINDING 7,
+  formerly a real bug: see the audit).
+- WSL-form project paths (=type: wsl= in =projects.json=) are fully
+  supported by every switch, including =-Explorer=/=-Terminal= (via UNC
+  conversion) and the default =Set-Location= action, which opens a WSL
+  shell instead when the path can't be set-located from Windows.
+
+* SEE ALSO
+
+[[file:powershell_workflows_reference.org][PowerShell Workflows - Complete Reference Guide]],
+[[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]] (=proj= wrapper),
+[[file:workflow-audit-2026-07.org][Workflow Setup Audit (2026-07)]] (FINDING 7, FINDING 8).

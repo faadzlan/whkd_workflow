@@ -22,3 +22,7 @@ FLIGHT_LOG_*.org
 
 # Local config overrides (keep personal settings local)
 projects.json.local
+
+# Private logs and backlog (as FLIGHT_LOG.org was)
+PROJECT_LOG.org
+TODO.org

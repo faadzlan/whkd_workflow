@@ -12,6 +12,10 @@
 
 $workflowDir = $PSScriptRoot
 
+# Shared helpers: Resolve-ProjectPath, Test-IsWSLPath, ConvertTo-WSLPath,
+# ConvertTo-WindowsPath, Convert-WSLPathToUNC, Get-WSLHomeDir
+. (Join-Path $workflowDir "Common.ps1")
+
 Write-Host "Loading PowerShell Workflows..." -ForegroundColor Cyan
 Write-Host "================================" -ForegroundColor Cyan
 
@@ -19,154 +23,36 @@ Write-Host "================================" -ForegroundColor Cyan
 # 1. NAVIGATION & PROJECTS
 #------------------------------------------------------------------------------
 
-# Load projects from JSON config
-$projectsConfigPath = Join-Path $workflowDir "projects.json"
-$script:ProjectsConfig = $null
-$script:ProjectsMeta = $null
-
-function Resolve-ProjectPath {
-    param([string]$Path)
-    # Resolve ~ to USERPROFILE for Windows paths only
-    # WSL paths (~/...) are kept as-is for WSL to resolve
-    # Windows paths use ~\, WSL paths use ~/
-    if ($Path -match '^~\\') {
-        # Windows path: ~\Projects\...
-        $Path = $Path -replace '^~\\', "$env:USERPROFILE\"
-    } elseif ($Path -match '^~/') {
-        # WSL path: ~/Documents/... - keep as-is
-        # Do not convert, let WSL resolve it
-    } elseif ($Path -match '^~$') {
-        # Just ~ by itself - treat as Windows
-        $Path = $env:USERPROFILE
-    }
-    return $Path
-}
-
-function Load-ProjectsConfig {
-    if ($script:ProjectsConfig -eq $null) {
-        if (Test-Path $projectsConfigPath) {
-            $json = Get-Content $projectsConfigPath -Raw | ConvertFrom-Json
-            $script:ProjectsConfig = @{}
-            $script:ProjectsMeta = @{}
-            $json.projects.PSObject.Properties | ForEach-Object {
-                # Resolve ~ to actual path at load time
-                $script:ProjectsConfig[$_.Name] = Resolve-ProjectPath -Path $_.Value.path
-                $script:ProjectsMeta[$_.Name] = @{
-                    Type = $_.Value.type
-                    Distro = $_.Value.distro
-                }
-            }
-        } else {
-            Write-Warning "Projects config not found at $projectsConfigPath"
-            $script:ProjectsConfig = @{}
-            $script:ProjectsMeta = @{}
-        }
-    }
-    return $script:ProjectsConfig
-}
-
-# Test if a path is a WSL path (starts with / or ~)
-function Test-IsWSLPath {
-    param([string]$Path)
-    return $Path -match '^(/|~)'
-}
-
-# Convert WSL path to Windows UNC path (for Explorer access)
-function Convert-WSLPathToUNC {
-    param(
-        [string]$WSLPath,
-        [string]$Distro = "Ubuntu"
-    )
-    # Remove trailing slash if present
-    $WSLPath = $WSLPath.TrimEnd('/')
-    # Expand ~ to /home/user if needed
-    if ($WSLPath -match '^~') {
-        $WSLPath = $WSLPath -replace '^~', '/home/adzlan'
-    }
-    # Convert /path to \path for UNC format
-    $windowsPath = $WSLPath -replace '/', '\'
-    return "\\wsl.localhost\$Distro$windowsPath"
-}
-
-# Quick project navigation
+# Single implementation lives in Go-ToProject.ps1 (see FINDING 7 in
+# documentation/workflow-audit-2026-07.org) - delegate rather than keep a
+# second, divergent copy here. Parameters are declared (not just @args)
+# so tab-completion below has a named ProjectName parameter to attach to;
+# there is no logic here to drift, only forwarding.
 function proj {
     param(
-        [string]$Name,
-        [switch]$e,  # Explorer
-        [switch]$t,  # Terminal
-        [switch]$w,  # WSL
-        [switch]$m   # Emacs
+        [Parameter(Position = 0)]
+        [string]$ProjectName,
+        [Alias("e")][switch]$Explorer,
+        [Alias("t")][switch]$Terminal,
+        [Alias("w")][switch]$WSL,
+        [Alias("m")][switch]$Emacs,
+        [switch]$List
     )
-    
-    $projects = Load-ProjectsConfig
-    
-    if (-not $Name -or $Name -eq "list") {
-        Write-Host "Available projects:" -ForegroundColor Yellow
-        $projects.GetEnumerator() | Sort-Object Key | ForEach-Object {
-            $type = if (Test-IsWSLPath $_.Value) { "[WSL]" } else { "" }
-            Write-Host "  - $($_.Key) $type" -ForegroundColor Gray
-        }
-        return
-    }
-    
-    $path = $projects[$Name.ToLower()]
-    if (-not $path) {
-        Write-Error "Unknown project: $Name"
-        return
-    }
-    
-    # Check if this is a WSL path
-    $isWSL = Test-IsWSLPath $path
-    $distro = $script:ProjectsMeta[$Name.ToLower()].Distro
-    if (-not $distro) { $distro = "Ubuntu" }
-    
-    if ($e) {
-        # Open in Explorer
-        if ($isWSL) {
-            $uncPath = Convert-WSLPathToUNC -WSLPath $path -Distro $distro
-            Start-Process explorer $uncPath
-        } else {
-            Start-Process explorer $path
-        }
-    }
-    elseif ($t) {
-        # Open in Terminal
-        if ($isWSL) {
-            $uncPath = Convert-WSLPathToUNC -WSLPath $path -Distro $distro
-            Start-Process wt -ArgumentList "-d `"$uncPath`""
-        } else {
-            Start-Process wt -ArgumentList "-d `"$path`""
-        }
-    }
-    elseif ($w) {
-        # Open in WSL
-        if ($isWSL) {
-            Start-Process wsl -ArgumentList "cd `"$path`" && bash"
-        } else {
-            $wslPath = $path -replace '^([A-Za-z]):', { '/mnt/' + $args[0].Groups[1].Value.ToLower() } -replace '\\', '/'
-            Start-Process wsl -ArgumentList "cd `"$wslPath`" && bash"
-        }
-    }
-    elseif ($m) {
-        # Open in Emacs (WSL) - pass path directly, no shell needed
-        if ($isWSL) {
-            Start-Process wsl -ArgumentList "emacs `"$path`"" -WindowStyle Hidden
-        } else {
-            $wslPath = $path -replace '^([A-Za-z]):', { '/mnt/' + $args[0].Groups[1].Value.ToLower() } -replace '\\', '/'
-            Start-Process wsl -ArgumentList "emacs `"$wslPath`"" -WindowStyle Hidden
-        }
-    }
-    else {
-        # Default: cd into directory
-        if ($isWSL) {
-            # For WSL paths, open WSL instead of trying Set-Location
-            Start-Process wsl -ArgumentList "cd `"$path`" && bash"
-        } else {
-            Set-Location $path
-            Get-ChildItemColor
-        }
-    }
+    & "$workflowDir\Go-ToProject.ps1" @PSBoundParameters
 }
+
+# Tab-completion for project aliases, reading the same projects.json
+# Go-ToProject.ps1 uses - so `proj <Tab>` never drifts from the real list.
+$script:ProjNameCompleter = {
+    param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+    $projectsConfigPath = Join-Path $workflowDir "projects.json"
+    if (-not (Test-Path $projectsConfigPath)) { return }
+    (Get-Content $projectsConfigPath -Raw | ConvertFrom-Json).projects.PSObject.Properties.Name |
+        Where-Object { $_ -like "$wordToComplete*" } |
+        ForEach-Object { [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }
+}
+Register-ArgumentCompleter -CommandName proj -ParameterName ProjectName -ScriptBlock $script:ProjNameCompleter
+Register-ArgumentCompleter -CommandName "Go-ToProject.ps1" -ParameterName ProjectName -ScriptBlock $script:ProjNameCompleter
 
 # Quick directory shortcuts
 function home { Set-Location $env:USERPROFILE }
@@ -199,12 +85,13 @@ function exp {
 # 2. SETTINGS SHORTCUTS
 #------------------------------------------------------------------------------
 
-function bt { Start-Process "ms-settings:bluetooth" }
-function vol { Start-Process "ms-settings:sound" }
-function wifi { Start-Process "ms-settings:network" }
-function disp { Start-Process "ms-settings:display" }
-function startup-apps { Start-Process "ms-settings:startupapps" }
-function power { Start-Process "ms-settings:powersleep" }
+# URIs live in one place - Open-QuickSettings.ps1's $settingsMap (FINDING 8)
+function bt { & "$workflowDir\Open-QuickSettings.ps1" -Setting Bluetooth }
+function vol { & "$workflowDir\Open-QuickSettings.ps1" -Setting Audio }
+function wifi { & "$workflowDir\Open-QuickSettings.ps1" -Setting Network }
+function disp { & "$workflowDir\Open-QuickSettings.ps1" -Setting Display }
+function startup-apps { & "$workflowDir\Open-QuickSettings.ps1" -Setting Startup }
+function power { & "$workflowDir\Open-QuickSettings.ps1" -Setting Power }
 
 #------------------------------------------------------------------------------
 # 3. SYSTEM HEALTH
@@ -213,6 +100,7 @@ function power { Start-Process "ms-settings:powersleep" }
 function syshealth { & "$workflowDir\Show-SystemHealth.ps1" }
 function mem { Get-Process | Sort-Object WorkingSet -Descending | Select-Object -First 10 | Format-Table Name, @{Name="Memory(MB)"; Expression={[math]::Round($_.WorkingSet/1MB)}} -AutoSize }
 function cpu { Get-Process | Sort-Object CPU -Descending | Select-Object -First 10 | Format-Table Name, CPU -AutoSize }
+function doctor { & "$workflowDir\Test-WorkflowSetup.ps1" }
 
 #------------------------------------------------------------------------------
 # 4. WORKFLOW COMMANDS
@@ -232,17 +120,16 @@ function clean-dl { & "$workflowDir\Clear-Downloads.ps1" @args }
 #------------------------------------------------------------------------------
 # 5. WSL BRIDGE
 #------------------------------------------------------------------------------
+# Path conversion comes from Common.ps1 (ConvertTo-WSLPath / ConvertTo-WindowsPath)
 
 function wsl-path {
     param([string]$Path = (Get-Location).Path)
-    $Path -replace '^([A-Za-z]):', { '/mnt/' + $args[0].Groups[1].Value.ToLower() } -replace '\\', '/'
+    ConvertTo-WSLPath $Path
 }
 
 function win-path {
     param([string]$WSLPath)
-    if ($WSLPath -match '^/mnt/([a-z])(/.*)?$') {
-        "$($matches[1].ToUpper()):$($matches[2] -replace '/', '\')"
-    } else { $WSLPath -replace '/', '\' }
+    ConvertTo-WindowsPath $WSLPath
 }
 
 function cp-wsl {
@@ -262,6 +149,28 @@ function wsl-here {
     param([string]$Command = "bash")
     $wslPath = wsl-path
     wsl sh -c "cd '$wslPath' && $Command"
+}
+
+# Show WSL distribution status
+function wsl-status {
+    Write-Host "WSL Distributions:" -ForegroundColor Cyan
+    wsl -l -v
+
+    Write-Host "`nWSL Configuration:" -ForegroundColor Cyan
+    $wslConfig = "$env:USERPROFILE\.wslconfig"
+    if (Test-Path $wslConfig) {
+        Get-Content $wslConfig | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
+    } else {
+        Write-Host "  No .wslconfig found" -ForegroundColor DarkGray
+    }
+
+    Write-Host "`nWSL Integration:" -ForegroundColor Cyan
+    Write-Host "  Windows PATH in WSL: $env:WSLENV" -ForegroundColor Gray
+}
+
+# Open current directory in Explorer (useful from inside a WSL-launched shell)
+function wsl-explorer {
+    Start-Process explorer (Get-Location).Path
 }
 
 #------------------------------------------------------------------------------
@@ -311,6 +220,7 @@ Write-Host "  startup-apps, power        - Startup apps, Power settings" -Foregr
 Write-Host "`nSystem:" -ForegroundColor Yellow
 Write-Host "  syshealth                  - System health dashboard" -ForegroundColor Gray
 Write-Host "  mem, cpu                   - Top memory/CPU consumers" -ForegroundColor Gray
+Write-Host "  doctor                     - Check for drift: whkd processes, whkdrc, modules" -ForegroundColor Gray
 
 Write-Host "`nWorkflows:" -ForegroundColor Yellow
 Write-Host "  work                       - Start daily work environment" -ForegroundColor Gray
@@ -321,6 +231,8 @@ Write-Host "`nWSL:" -ForegroundColor Yellow
 Write-Host "  wsl-path [path]            - Show WSL path for current/specified dir" -ForegroundColor Gray
 Write-Host "  cp-wsl, cp-win             - Copy path to clipboard (WSL or Windows format)" -ForegroundColor Gray
 Write-Host "  wsl-here [cmd]             - Run command in WSL at current directory" -ForegroundColor Gray
+Write-Host "  wsl-status                 - Show WSL distro status" -ForegroundColor Gray
+Write-Host "  wsl-explorer               - Open current directory in Explorer" -ForegroundColor Gray
 
 Write-Host "`nUtilities:" -ForegroundColor Yellow
 Write-Host "  touch <file>               - Create or update file timestamp" -ForegroundColor Gray

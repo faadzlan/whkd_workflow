@@ -1,0 +1,102 @@
+#+title: START-WORKENVIRONMENT(1)
+#+subtitle: Launch and position the daily work window layout
+
+* NAME
+
+Start-WorkEnvironment.ps1 - open and position Explorer/Terminal/Emacs
+windows across virtual desktops for a project
+
+* SYNOPSIS
+
+#+begin_src powershell
+Start-WorkEnvironment.ps1 [-ProjectPath <string>] [-SkipTerminal] [-SkipExplorer] [-SkipEmacs]
+#+end_src
+
+* DESCRIPTION
+
+Start-WorkEnvironment builds a fixed daily window layout for a given
+project directory, roughly equivalent to a saved tiling-window-manager
+layout (think i3wm workspace rules, or a tmuxinator/tmuxp session) but
+driven through Win32 APIs since Windows has no native equivalent:
+
+- *Desktop 2*: Windows Terminal on the right half; two File Explorer
+  windows stacked on the left half (top/bottom).
+- *Desktop 3*: Emacs, running inside WSL, launched detached from the
+  terminal at the project root.
+
+It uses the =VirtualDesktop= PowerShell module to switch desktops and
+raw =user32.dll= P/Invoke (=MoveWindow=, =ShowWindow=) to position
+windows, ending back on Desktop 2.
+
+* OPTIONS
+
+- *-ProjectPath* <string> ::
+  Project directory to open every window at. Defaults to the =projects=
+  entry (or, if absent, the first entry) in =projects.json=; falls back
+  to =%USERPROFILE%\Projects= if the config file is missing. This is
+  meant to be changed daily - pass today's working directory each time.
+
+- *-SkipTerminal* ::
+  Don't open/position the Windows Terminal window on Desktop 2.
+
+- *-SkipExplorer* ::
+  Don't open/position the two File Explorer windows on Desktop 2.
+
+- *-SkipEmacs* ::
+  Don't launch Emacs on Desktop 3.
+
+* EXIT STATUS
+
+- *0* :: Success.
+- *1* :: =-ProjectPath= does not exist and you decline the "Create it?"
+  prompt.
+
+* EXAMPLES
+
+Open the default project (from =projects.json=) in the full layout:
+#+begin_src powershell
+.\tools\workflows\Start-WorkEnvironment.ps1
+#+end_src
+
+Open a specific project for today:
+#+begin_src powershell
+.\tools\workflows\Start-WorkEnvironment.ps1 -ProjectPath "G:\My Drive\Projects\OpenFOAM\Case1"
+#+end_src
+
+Skip Emacs, e.g. when it's already running:
+#+begin_src powershell
+.\tools\workflows\Start-WorkEnvironment.ps1 -SkipEmacs
+#+end_src
+
+* FILES
+
+- =projects.json= (same directory as the script) :: source of the
+  default =-ProjectPath= when none is given.
+
+* NOTES
+
+- If =-ProjectPath= doesn't exist, you're prompted interactively to
+  create it; there is no non-interactive/=-Force= way to auto-create it,
+  so this script is not safe to run fully unattended against a path that
+  might not exist.
+- Window positioning is timing-sensitive: each new window gets a short
+  =Start-Sleep= before its handle is looked up (first via a before/after
+  process-handle diff, falling back to polling
+  =Process.MainWindowHandle= up to 5 times). On a slow-starting app the
+  positioning step can occasionally miss and log "Could not find window
+  handle for positioning" without aborting the rest of the layout.
+- Desktop switching silently no-ops (with a warning) if Desktop 2/3
+  don't already exist - this script does not create virtual desktops,
+  only switches between existing ones.
+- Emacs is launched with =-WindowStyle Hidden= specifically so it
+  detaches from the PowerShell host and keeps running after the script
+  (and even the terminal) exits.
+- Loaded as the =work= function by
+  [[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]], forwarding an optional path argument as
+  =-ProjectPath=.
+
+* SEE ALSO
+
+[[file:powershell_workflows_reference.org][PowerShell Workflows - Complete Reference Guide]],
+[[file:close-all-windows.org][Close-AllWindows.ps1]] (the end-of-day counterpart, aliased =bye=),
+[[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]] (=work= alias).

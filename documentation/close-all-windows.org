@@ -1,0 +1,90 @@
+#+title: CLOSE-ALLWINDOWS(1)
+#+subtitle: Shutdown cleanup - close every open GUI window
+
+* NAME
+
+Close-AllWindows.ps1 - close all open application windows
+
+* SYNOPSIS
+
+#+begin_src powershell
+Close-AllWindows.ps1 [-Exclude <string[]>] [-Force] [-WhatIf] [-Confirm]
+#+end_src
+
+* DESCRIPTION
+
+Close-AllWindows enumerates every process with a visible top-level
+window and closes it, either gracefully (=WM_CLOSE=, like clicking the X)
+or forcibly (=Stop-Process=). It is the =killall= of this toolset - a
+one-shot end-of-day cleanup, bound to the =bye= shortcut.
+
+The current PowerShell/Windows Terminal host and =explorer= are always
+left alone regardless of =-Exclude=, so closing everything never closes
+the terminal you ran it from or your desktop shell.
+
+* OPTIONS
+
+- *-Exclude* <string[]> ::
+  Process names (as reported by =Get-Process=, no =.exe=) to skip.
+  Default: =@("explorer", "whkd")=. Replaces the default list entirely
+  rather than appending to it.
+
+- *-Force* ::
+  Use =Stop-Process -Force= (unconditional kill) instead of the default
+  graceful =CloseMainWindow()= call. Use when an app is unresponsive and
+  ignoring the graceful close request. Default: off (graceful).
+
+- *-WhatIf* ::
+  Standard PowerShell common parameter. Lists which windows would be
+  closed without closing them.
+
+- *-Confirm* ::
+  Standard PowerShell common parameter. Prompts before closing each
+  individual window.
+
+* EXIT STATUS
+
+- *0* :: Always, whether or not any windows were found or closed.
+  Failures to close an individual window are reported per-window and do
+  not affect the exit code.
+
+* EXAMPLES
+
+Close everything except Explorer and whkd (the defaults):
+#+begin_src powershell
+.\tools\workflows\Close-AllWindows.ps1
+#+end_src
+
+Force-kill unresponsive apps instead of asking them to close:
+#+begin_src powershell
+.\tools\workflows\Close-AllWindows.ps1 -Force
+#+end_src
+
+Keep a browser open too:
+#+begin_src powershell
+.\tools\workflows\Close-AllWindows.ps1 -Exclude "explorer","whkd","chrome"
+#+end_src
+
+Preview what would close, without closing anything:
+#+begin_src powershell
+.\tools\workflows\Close-AllWindows.ps1 -WhatIf
+#+end_src
+
+* NOTES
+
+- Always excluded regardless of =-Exclude=: =powershell= and
+  =WindowsTerminal= process names (hardcoded, so the script never closes
+  its own host window).
+- A process is only a candidate if =MainWindowHandle -ne 0=, i.e. it has
+  a visible top-level window - background/tray-only processes are never
+  touched.
+- Graceful close (default) sends the equivalent of clicking the window's
+  X button; an app with unsaved changes may show its own save prompt
+  instead of actually closing.
+- Loaded as the =bye= function by
+  [[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]].
+
+* SEE ALSO
+
+[[file:powershell_workflows_reference.org][PowerShell Workflows - Complete Reference Guide]],
+[[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]] (=bye= alias).

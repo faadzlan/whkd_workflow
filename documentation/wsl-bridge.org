@@ -1,0 +1,30 @@
+#+title: WSL-BRIDGE(1)
+#+subtitle: Retired - folded into Load-WorkflowProfile.ps1
+
+* STATUS: RETIRED (2026-07-29)
+
+=tools/workflows/wsl-bridge.ps1= has been deleted. [[file:workflow-audit-2026-07.org][FINDING 6 of the
+2026-07 workflow audit]] established it was dead code: nothing ever
+dot-sourced it, so its copies of =wsl-path=/=win-path=/=cp-wsl=/=cp-win=/
+=wsl-here= never ran - [[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]]'s own inline versions
+were the only ones that ever executed. FINDING 11 additionally noted that
+the file's =$exports= here-string looked like an export mechanism but was
+assigned to a variable that was never referenced, so it exported nothing.
+
+Its two unique functions have been folded into
+[[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]]'s "WSL BRIDGE" section, which is now the single
+source for this functionality:
+
+- =Get-WSLStatus= → =wsl-status=
+- =Open-WSLInExplorer= → =wsl-explorer=
+
+=wsl-path=, =win-path=, =cp-wsl=, =cp-win=, and =wsl-here= continue to
+live only in [[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]], now backed by the shared
+=ConvertTo-WSLPath=/=ConvertTo-WindowsPath= helpers in
+=tools/workflows/Common.ps1= (FINDING 8) instead of a second inline copy.
+
+* SEE ALSO
+
+[[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]],
+[[file:powershell_workflows_reference.org][PowerShell Workflows - Complete Reference Guide]],
+[[file:workflow-audit-2026-07.org][Workflow Setup Audit (2026-07)]].

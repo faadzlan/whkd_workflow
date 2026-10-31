@@ -46,17 +46,9 @@ param(
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectsConfigPath = Join-Path $scriptDir "projects.json"
 
-function Resolve-ProjectPath {
-    param([string]$Path)
-    # Resolve ~ to USERPROFILE for Windows paths only
-    # WSL paths (~/...) are kept as-is for WSL to resolve
-    if ($Path -match '^~\\') {
-        $Path = $Path -replace '^~\\', "$env:USERPROFILE\"
-    } elseif ($Path -match '^~$') {
-        $Path = $env:USERPROFILE
-    }
-    return $Path
-}
+# Shared helpers: Resolve-ProjectPath, Test-IsWSLPath, ConvertTo-WSLPath,
+# ConvertTo-WindowsPath, Convert-WSLPathToUNC, Get-WSLHomeDir
+. (Join-Path $scriptDir "Common.ps1")
 
 function Get-DefaultProjectPath {
     if (Test-Path $projectsConfigPath) {
@@ -110,23 +102,6 @@ function Switch-ToDesktop {
     } catch {
         Write-Host "Could not switch desktops automatically. Please use whkd hotkeys." -ForegroundColor Yellow
         return $false
-    }
-}
-
-function Get-CurrentDesktopNumber {
-    try {
-        # Get-CurrentDesktop returns the current desktop object directly
-        $currentDesktop = Get-CurrentDesktop
-        # Get all desktops to find the index of the current one
-        $desktopList = Get-DesktopList
-        for ($i = 0; $i -lt $desktopList.Count; $i++) {
-            if ($desktopList[$i].Visible) {
-                return $i + 1  # Convert to 1-based
-            }
-        }
-        return 1
-    } catch {
-        return 1
     }
 }
 
@@ -268,17 +243,8 @@ function Start-EmacsWSL {
         [string]$ProjectPath
     )
     
-    # Convert Windows path to WSL path
-    # G:\folder\file -> /mnt/g/folder/file (lowercase drive letter for WSL)
-    # Step 1: Replace backslashes with forward slashes
-    $wslPath = $ProjectPath -replace '\\', '/'
-    # Step 2: Replace drive letter (e.g., G:) with /mnt/g (lowercase)
-    if ($wslPath -match '^([A-Za-z]):(/.*)?$') {
-        $drive = $matches[1].ToLower()
-        $rest = $matches[2]
-        $wslPath = "/mnt/$drive$rest"
-    }
-    
+    $wslPath = if (Test-IsWSLPath $ProjectPath) { $ProjectPath } else { ConvertTo-WSLPath $ProjectPath }
+
     Write-Host "Opening Emacs (WSL) at: $wslPath" -ForegroundColor Gray
     
     # KEY POINT: Using -WindowStyle Hidden "lets go" of the terminal

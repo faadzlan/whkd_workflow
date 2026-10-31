@@ -1,0 +1,78 @@
+#+title: SHOW-SYSTEMHEALTH(1)
+#+subtitle: One-shot system health dashboard
+
+* NAME
+
+Show-SystemHealth.ps1 - print a memory/CPU/disk/startup/network health
+dashboard
+
+* SYNOPSIS
+
+#+begin_src powershell
+Show-SystemHealth.ps1 [-ShowAllProcesses]
+#+end_src
+
+* DESCRIPTION
+
+Show-SystemHealth answers "why is my PC slow?" in one command - it is
+=top=, =df -h=, and =free -m= combined, adapted for Windows via WMI/CIM.
+It prints, in order: RAM usage with top 10 memory consumers, current CPU
+load with top 5 CPU consumers, per-drive disk space, up to 10 high-impact
+startup programs, the primary IPv4 address/interface, and a connectivity
+check against =8.8.8.8=. It finishes with a short "quick actions" section
+that only appears when RAM usage is high.
+
+* OPTIONS
+
+- *-ShowAllProcesses* ::
+  After the normal dashboard, also print the top 20 processes by working
+  set (name, PID, memory in MB, CPU time) in one table. Default: off.
+
+* EXIT STATUS
+
+- *0* :: Always. Individual data sources that are unavailable (e.g. no
+  active network adapter) degrade to a "not found"/"offline" message
+  rather than aborting the script.
+
+* EXAMPLES
+
+Run the standard dashboard:
+#+begin_src powershell
+.\tools\workflows\Show-SystemHealth.ps1
+#+end_src
+
+Include a full top-20 process table:
+#+begin_src powershell
+.\tools\workflows\Show-SystemHealth.ps1 -ShowAllProcesses
+#+end_src
+
+* OUTPUT SECTIONS
+
+- *MEMORY USAGE* :: total/used/free RAM (color-coded green/yellow/red at
+  75%/90% used) plus top 10 processes by working set.
+- *CPU USAGE* :: average load percentage across logical processors
+  (color-coded at 50%/80%) plus top 5 processes by CPU time.
+- *DISK SPACE* :: per fixed-drive (=DriveType=3=) used/total GB and
+  percent free, color-coded at 10%/20% free.
+- *STARTUP PROGRAMS* :: up to 10 entries from
+  =Win32_StartupCommand= (Task Manager's Startup tab equivalent).
+- *NETWORK* :: first non-loopback, non-link-local IPv4 address and its
+  interface, plus a one-ping connectivity check.
+- *QUICK ACTIONS* :: only printed when RAM usage exceeds 85%; suggests
+  the top-memory-consumer command and a Chrome-specific kill command.
+
+* NOTES
+
+- Data comes from =Get-CimInstance= (Win32_ComputerSystem,
+  Win32_OperatingSystem, Win32_Processor, Win32_LogicalDisk,
+  Win32_StartupCommand) and =Get-NetIPAddress= / =Test-Connection= - all
+  standard, no external modules required.
+- Loaded as the =syshealth= function by
+  [[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]], which also defines lighter-weight standalone
+  =mem= and =cpu= one-liners for a quicker top-10 check without the rest
+  of the dashboard.
+
+* SEE ALSO
+
+[[file:powershell_workflows_reference.org][PowerShell Workflows - Complete Reference Guide]],
+[[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]] (=syshealth=, =mem=, =cpu= aliases).

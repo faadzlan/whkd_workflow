@@ -1,0 +1,607 @@
+#+title: Workflow Setup Audit
+#+subtitle: Point-in-time review of the whkd_workflow setup as deployed on ADZLAN, 2026-07-28
+
+* SCOPE
+
+Review of the eight workflow scripts in =tools/workflows/=, their
+documentation, and the live machine state they run against, looking for
+gaps between what the project intends and what it actually delivers
+day to day.
+
+Findings are ordered by impact, not by effort. Each records the evidence
+it was drawn from so it can be re-checked later - several are
+observations of *running machine state* on 2026-07-28 and may have
+changed since.
+
+Revised 2026-07-29 after locating the AutoHotkey script, establishing why
+whkd was adopted, and dating the komorebi files; FINDINGS 1, 2, 3, 4,
+and 5 changed materially as a result.
+
+Two of those revisions (FINDINGS 4 and 5) corrected the same mistake:
+treating an unexplained artefact in the home directory as evidence of an
+active design decision. Both were adjacent to the live whkd config;
+neither was related to it. Where an original reading was wrong it has
+been left visible with the reason, rather than silently replaced.
+
+Scripts reviewed: [[file:clear-downloads.org][Clear-Downloads.ps1]], [[file:close-all-windows.org][Close-AllWindows.ps1]],
+[[file:go-to-project.org][Go-ToProject.ps1]], [[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]], [[file:open-quick-settings.org][Open-QuickSettings.ps1]],
+[[file:show-system-health.org][Show-SystemHealth.ps1]], [[file:start-work-environment.org][Start-WorkEnvironment.ps1]], [[file:wsl-bridge.org][wsl-bridge.ps1]].
+
+** Not reviewed
+Stated so the coverage of this audit is not overestimated:
+
+- =tools/query_scheduled_tasks.ps1=, =tools/update_whkd_task.ps1=,
+  =tools/test-sanitization.ps1= - the three scripts outside
+  =tools/workflows/=. =update_whkd_task.ps1= is directly relevant to
+  FINDING 3 and should be read before acting on it.
+- =tools/shell/zshrc= and =install_zsh_modern.sh= - the WSL-side shell
+  configuration.
+- The internals of =keyboardRemapping.ahk=; only its hotkey namespace
+  was enumerated (FINDING 4), not its 2036 lines of logic.
+- Whether the =whkdrc= bindings actually fire correctly, which was
+  inferred from the config rather than tested.
+
+* WHY whkd EXISTS
+
+Recorded here because it is the project's founding rationale and is not
+written down anywhere else in the repository.
+
+whkd was adopted for one specific reason: *to bind a key to the
+PowerShell =Switch-Desktop= cmdlet.* Virtual-desktop switching driven
+from AutoHotkey proved unreliable in practice.
+
+The mechanism explains why. AutoHotkey has no access to the
+virtual-desktop COM interface, so an AHK binding must switch desktops by
+synthesising =Ctrl+Win+Left/Right= keystrokes. That approach is
+relative rather than absolute - it cannot jump straight to desktop 4 -
+and it is gated on the desktop-switch animation completing, so rapid or
+repeated presses drop or overshoot. whkd, running with
+=.shell powershell=, calls =Switch-Desktop -Desktop N= from the
+VirtualDesktop module, which drives the COM API directly: absolute,
+deterministic, animation-independent.
+
+This reframes FINDING 1 below. whkd is not under-configured through
+neglect; it is currently doing exactly the single job it was brought in
+to do. Whether to widen its remit is a real design choice, and the
+argument for keeping it narrow is given there.
+
+* SUMMARY
+
+| # | Finding                                          | Severity | Effort |
+|---+--------------------------------------------------+----------+--------|
+| 1 | Workflows are not bound to any hotkey            | Medium   | Low    |
+| 2 | Machine config lives outside the repo            | High     | Low    |
+| 3 | Three competing whkd start mechanisms            | Medium   | Low    |
+| 4 | AutoHotkey boundary undocumented (no conflict)   | Low      | Low    |
+| 5 | komorebi is abandoned 2024 residue               | Low      | Low    |
+| 6 | wsl-bridge.ps1 is dead code                      | Low      | Low    |
+| 7 | =proj= is defined twice, differently             | Medium   | Low    |
+| 8 | Helper functions duplicated across scripts       | Low      | Medium |
+| 9 | Downloads =_Archive= grows without bound         | Medium   | Low    |
+|10 | =AGENTS.md= contains a 26-line verbatim duplicate| Low      | Low    |
+|11 | Unused functions in two scripts                  | Low      | Low    |
+
+* FINDING 1: Workflows are not bound to any hotkey
+
+** Severity
+Medium. See WHY whkd EXISTS above - this is an unexercised opportunity,
+not a broken intent.
+
+** Evidence
+The active =~/.config/whkdrc= is 28 lines. Every binding in it is either
+a virtual-desktop switch (=alt + 1..0= → =Switch-Desktop=), a
+move-window-to-desktop (=alt + shift + 1..0=), or the =alt + o= config
+reload. No binding invokes any script in =tools/workflows/=.
+
+** Analysis
+Every workflow verb - =work=, =bye=, =syshealth=, =clean-dl=, =proj= -
+costs an open-terminal, a profile load, and typing. whkd is already
+running, already bound to a modifier namespace, and already proven
+reliable for the one job it was brought in for; extending it to the
+workflow verbs is close to free.
+
+The counter-argument deserves weight. whkd was adopted to solve a
+reliability problem, and it currently succeeds because its
+responsibilities are narrow: one cmdlet, no launching, no filesystem
+work. Binding =clean-dl= (which moves gigabytes) or =bye= (which closes
+every window) to a key puts destructive operations one keystroke away,
+inside a daemon that has - per FINDING 3 - been observed running in
+duplicate. A double-fired =Switch-Desktop= is invisible; a double-fired
+=bye= is not.
+
+A reasonable middle position is to bind only the *idempotent and
+non-destructive* verbs, and leave the destructive ones as typed
+commands.
+
+=FLIGHT-010: Configure whkdrc= has recorded this as pending since
+2026-03.
+
+** Recommendation
+Bind the safe verbs first, keeping the existing =alt + <digit>= desktop
+bindings intact:
+
+#+begin_src conf
+alt + shift + w  : work           # idempotent - safe
+alt + shift + s  : syshealth      # read-only - safe
+alt + shift + p  : <fuzzy project picker>
+#+end_src
+
+Leave =bye= and =clean-dl= unbound until FINDING 3 is resolved.
+
+Two constraints, both verified:
+
+- *Namespace is clear.* =alt + shift + <letter>= does not collide with
+  the AutoHotkey script, which defines no Alt+Shift bindings at all
+  (see FINDING 4).
+- *The profile will not be loaded.* whkd's =.shell powershell= spawns a
+  *non-interactive* shell, which does not read =$PROFILE=. Bindings must
+  invoke scripts by full path, or dot-source [[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]]
+  first - the bare verb names above will *not* resolve as written. This
+  is the most likely reason a newly added binding appears to do nothing.
+
+* FINDING 2: Machine config lives outside the repo
+
+** Severity
+High. Single point of data loss.
+
+** Evidence
+Live on the machine and unversioned:
+
+| File              | Location                       | Size | Version it? |
+|-------------------+--------------------------------+------+-------------|
+| =whkdrc=          | =C:\Users\faadz\.config\=      | 1.2K | *Yes*       |
+| =start_whkd.vbs=  | =C:\Users\faadz\.config\whkd\= | 215B | *Yes* - and fix it, see FINDING 3 |
+| =whkdrc.komorebi= | =C:\Users\faadz\.config\=      | 2.7K | No - delete, FINDING 5 |
+| =komorebi.json=   | =C:\Users\faadz\=              | -    | No - delete, FINDING 5 |
+| =applications.yaml= | =C:\Users\faadz\=            | 1415 lines | No - stock upstream, FINDING 5 |
+
+Meanwhile =AGENTS.md= documents =whkdrc= in the project tree as
+"(to be created)", where it has never existed.
+
+** Analysis
+A repository whose purpose is managing this workflow does not contain
+the configuration that defines the workflow. The active =whkdrc= is the
+single most important file in the setup and exists in exactly one place,
+one reinstall from gone.
+
+The original audit also listed the three komorebi files here as worth
+preserving, on the assumption they were authored configuration. FINDING
+5 establishes they are not: two are abandoned 2024 residue and
+=applications.yaml= is an upstream community database with no personal
+content. Vendoring it would mean carrying 1415 lines of someone else's
+file that is better re-fetched than stored.
+
+So the scope of this finding is smaller than first recorded - two files,
+not five - but the =whkdrc= half of it is unchanged and remains the
+top-priority item in this audit.
+
+** Recommendation
+Add a =config/= directory holding =whkdrc= and the (fixed) whkd start
+script, with an install script that copies or symlinks them into place.
+Correct the =AGENTS.md= project tree to match reality once done.
+
+* FINDING 3: Three competing whkd start mechanisms
+
+** Severity
+Medium. Causes intermittent, hard-to-diagnose hotkey misbehaviour, and
+gates the FINDING 1 recommendation.
+
+** Evidence
+=tasklist= on 2026-07-28 - two daemons alive:
+
+#+begin_example
+"whkd.exe","30692","Console","1","7,868 K"
+"whkd.exe","2644","Console","1","9,532 K"
+#+end_example
+
+Three independent kill-and-restart mechanisms exist, in two different
+repositories:
+
+| Mechanism                    | Location                      | Post-kill delay |
+|------------------------------+-------------------------------+-----------------|
+| Scheduled task =\Restart WHKD= | Task Scheduler              | -               |
+| =start_whkd.vbs=             | =~/.config/whkd/=             | none            |
+| =restart-whkd.ps1=           | AHK project (see FINDING 4)   | 500 ms          |
+| =restart-whkd.bat=           | AHK project (see FINDING 4)   | 1 s             |
+
+A fourth path exists as a hotkey: =alt + o= in =whkdrc= runs
+=taskkill /f /im whkd.exe && Start-Process whkd -WindowStyle hidden=.
+
+** Analysis
+=start_whkd.vbs= issues =taskkill= and =Start-Process= as a single
+=powershell.exe -Command= string with *no delay between them*. =taskkill
+/f= returns as soon as the terminate request is queued, not once the
+process has exited, so the new whkd can start while the old one is still
+shutting down - and the old one then survives the window in which it was
+supposed to die. The two variants in the AHK project both insert a delay
+(500ms and 1s respectively) and do not have this defect.
+
+Duplicate daemons mean one keypress can fire its bound command twice.
+For the current =whkdrc= that is invisible, since =Switch-Desktop -Desktop N=
+is idempotent - switching to desktop 3 twice lands on desktop 3. It stops
+being invisible the moment a non-idempotent verb is bound, which is
+exactly what FINDING 1 proposes.
+
+The three mechanisms also disagree about *which is authoritative*, and
+one of them lives in an entirely separate project that this repository
+does not reference.
+
+** Recommendation
+Resolve this before acting on FINDING 1.
+
+Keep one mechanism. =restart-whkd.ps1= is the soundest of the three - it
+uses =Stop-Process= with =-ErrorAction SilentlyContinue= rather than
+=taskkill=, and it waits. Either move it into this repository and point
+the scheduled task at it, or fix =start_whkd.vbs= to wait after the kill.
+Retire the others, and add a duplicate-instance guard to whichever
+survives.
+
+* FINDING 4: AutoHotkey boundary undocumented (no conflict)
+
+** Severity
+Low. Corrected on 2026-07-29 - the initial reading of this finding was
+wrong and is retained here as a caution.
+
+** Evidence
+=AutoHotkey.exe= (PID 19260) running on 2026-07-28 is
+=keyboardRemapping.ahk= (2036 lines, AHK v1.1), located at
+=G:\My Drive\Peribadi\autohotkeyScripts\my_autohotkey_scripts\=. It is a
+separately documented project with its own =AGENTS.md= and
+=FLIGHT_LOG.org=.
+
+Its scope is *text expansion and application automation* for research
+grant administration - MyGRANTS hotstrings, multi-line comment
+templates, Office scroll bindings, CapsLock→Ctrl/Esc remapping. It does
+no window or virtual-desktop management whatsoever.
+
+Binding namespaces, enumerated from both configs:
+
+| Daemon | Claims                                                      |
+|--------+-------------------------------------------------------------|
+| whkd   | =alt + 1..0=, =alt + shift + 1..0=, =alt + o=               |
+| AHK    | =#= (Win), =^= (Ctrl), =^!=, =^#=, =^!+=, =^#!=, =+Wheel=, =F5=, and bare =!n= / =!p= |
+
+** Analysis
+There is no conflict, and the division of responsibility is sound:
+AutoHotkey owns *typing*, whkd owns *desktops*. These are disjoint
+domains, and each tool is used for what it is actually good at - which
+is precisely the reason whkd was adopted (see WHY whkd EXISTS).
+
+The initial audit recorded this as a probable conflict purely because an
+unexplained second hotkey daemon was running. That inference was wrong.
+The lesson is worth keeping: an unknown process is not evidence of a
+problem, and the audit should have located the script before
+characterising it.
+
+Two things remain genuinely undocumented:
+
+- Neither project's documentation mentions the other, despite the AHK
+  project owning two of the three whkd restart mechanisms in FINDING 3.
+- AHK holds =!n= and =!p= - bare Alt+letter - which is otherwise whkd's
+  namespace. The only current whkd Alt+letter binding is =alt + o=, so
+  there is no collision today, but the namespace is shared and neither
+  side records that.
+
+** Recommendation
+No conflict to fix. Record the boundary in =AGENTS.md= - "AutoHotkey
+owns text expansion and app automation; whkd owns virtual desktops" -
+and note the shared bare-Alt namespace so future bindings avoid =!n= and
+=!p=. Cross-reference the AHK project as the owner of =restart-whkd.ps1=.
+
+* FINDING 5: komorebi is abandoned residue that predates this project
+
+** Severity
+Low. Corrected on 2026-07-29 - this was originally recorded as an open
+architectural decision. It is not one. It was settled in 2024.
+
+** Evidence
+File timestamps establish the history precisely:
+
+| When                  | What                                                  |
+|-----------------------+-------------------------------------------------------|
+| *2024-01-30 09:02*    | =whkdrc= created - 1.2K, desktop switching only       |
+| 2024-05-01 20:09      | komorebi installed via scoop                          |
+| 2024-05-01 22:49:18   | =whkdrc.komorebi= and =applications.yaml= written     |
+| 2024-05-01 23:02      | whkd re-installed via scoop, as komorebi's companion  |
+| 2024-05-01 23:13      | =komorebi.json= written                               |
+| ...                   | /(nothing for 22 months)/                             |
+| 2026-03-12            | =start_whkd.vbs=                                      |
+| *2026-03-14*          | This repository's initial commit                      |
+
+Two details sharpen this:
+
+- =whkdrc.komorebi= and =applications.yaml= share an *identical*
+  mtime to the nanosecond (=22:49:18.702190500=), so both were written
+  by a single operation - the komorebi quickstart, not by hand.
+- =applications.yaml= is the *stock upstream* komorebi
+  application-specific-configuration database: 173 entries for
+  1Password, Ableton Live, Guitar Rig, and similar. It contains no
+  personal configuration at all.
+
+The repository contains exactly one reference to komorebi, in
+=AGENTS.md=, and it is generic: "It's commonly used alongside komorebi
+(a tiling window manager for Windows)."
+
+** Analysis
+komorebi was never brought into this project. The entire komorebi
+experiment took place in a single evening - 20:09 to 23:13 on
+2024-05-01 - and was abandoned the same night. This repository was
+created *22 months later*.
+
+Note also that =whkdrc= predates komorebi by three months. This
+corroborates the account in WHY whkd EXISTS: whkd was adopted
+standalone, to bind =Switch-Desktop=, and komorebi was a later and
+separate experiment. The usual direction - discovering whkd *through*
+komorebi, since both are by the same author and whkd ships as
+komorebi's companion daemon - is not what happened here.
+
+The original audit framed this as "two competing answers to window
+positioning, pick one." That framing was wrong. These files are not a
+competing design; they are residue in the home directory that the audit
+swept in because they sit next to the live whkd config. This is the same
+error as FINDING 4 - proximity mistaken for relevance.
+
+** Recommendation
+Delete =komorebi.json= and =whkdrc.komorebi=. Do *not* version them
+(see FINDING 2 as revised). =applications.yaml= is upstream and should
+be re-fetched rather than kept, if komorebi is ever revisited.
+Optionally =scoop uninstall komorebi=.
+
+There is no decision to make and nothing to merge.
+
+** What remains genuinely open
+Separately from the residue: [[file:start-work-environment.org][Start-WorkEnvironment.ps1]] hand-rolls window
+placement in a way that is timing-dependent by construction - a =WinAPI=
+P/Invoke block for =MoveWindow=/=ShowWindow=, before/after
+=MainWindowHandle= diffing to identify newly opened windows, and fixed
+=Start-Sleep= delays (1200ms, 500ms, 200ms). Roughly 200 of the script's
+401 lines serve this, and it infers window identity from process
+enumeration rather than from the launch itself.
+
+Whether a tiling window manager would do this better is a real
+forward-looking question. But it is a question about *this year's*
+layout code, to be answered on its merits - not an obligation inherited
+from an evening in 2024. Deleting the residue does not foreclose it.
+
+* FINDING 6: wsl-bridge.ps1 is dead code
+
+** Severity
+Low, but actively misleading.
+
+** Evidence
+[[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]] never dot-sources =wsl-bridge.ps1=. It defines
+its own =wsl-path=, =win-path=, =cp-wsl=, =cp-win=, and =wsl-here=
+inline (section 5, "WSL BRIDGE"). Nothing else in =tools/= references
+the file. Its only references anywhere are documentation:
+[[file:wsl-bridge.org][wsl-bridge.org]], [[file:powershell_workflows_reference.org][powershell_workflows_reference.org]], and a cross-link in
+[[file:load-workflow-profile.org][load-workflow-profile.org]].
+
+** Analysis
+In normal use the script never loads, so its versions of these functions
+never run. [[file:wsl-bridge.org][wsl-bridge.org]] does note the overlap, but frames it as a
+load-order question ("the profile's versions, loaded second, win") -
+which understates it: the file is not loaded at all.
+
+The practical risk is that a fix applied to =wsl-bridge.ps1= appears to
+work on inspection and has no effect in practice.
+
+** Recommendation
+Either have [[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]] dot-source it and delete its own
+inline copies, or delete =wsl-bridge.ps1= and fold its unique parts
+(=Get-WSLStatus=, =Open-WSLInExplorer=) into the profile. Update
+[[file:wsl-bridge.org][wsl-bridge.org]] to match whichever is chosen.
+
+* FINDING 7: =proj= is defined twice, differently
+
+** Severity
+Medium. Behaviour depends on load order.
+
+** Evidence
+- [[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]]:92 - =function proj= with =-e=/=-t=/=-w=/=-m=
+  switches, WSL-path detection, and UNC conversion
+- [[file:go-to-project.org][Go-ToProject.ps1]]:124 - =function global:proj { & $PSScriptRoot\Go-ToProject.ps1 @args }=
+  (and =cdp=, same target)
+
+Both read the same [[file:../tools/workflows/projects.json][projects.json]], but they are separate implementations.
+
+** Analysis
+=Go-ToProject.ps1= defines its =proj= in the *global* scope, so if it is
+run after the profile loads, it silently replaces the profile's version
+for the rest of the session. The two are similar enough that the
+substitution is not obvious, and different enough to matter.
+
+** Recommendation
+Keep one implementation. Given the profile's version has the richer
+switch handling, the cleanest resolution is for =Go-ToProject.ps1= to be
+the single implementation and for the profile to delegate to it, rather
+than the reverse.
+
+* FINDING 8: Helper functions duplicated across scripts
+
+** Severity
+Low individually; the aggregate effect is that fixes must be applied in
+several places.
+
+** Evidence
+
+| Duplicated                        | Locations                                                     |
+|-----------------------------------+---------------------------------------------------------------|
+| =Resolve-ProjectPath=             | Load-WorkflowProfile.ps1:27, Start-WorkEnvironment.ps1:49, Go-ToProject.ps1:30 |
+| Windows→WSL path conversion       | Load-WorkflowProfile.ps1:236, wsl-bridge.ps1:21, Start-WorkEnvironment.ps1:274 (inline) |
+| =bt= / =vol= / =wifi= / =disp=    | Load-WorkflowProfile.ps1:202-205, Open-QuickSettings.ps1:57-60 |
+
+Additionally, =Convert-WSLPathToUNC= (Load-WorkflowProfile.ps1:84)
+hardcodes the WSL home directory:
+
+#+begin_src powershell
+$WSLPath = $WSLPath -replace '^~', '/home/adzlan'
+#+end_src
+
+** Analysis
+The three =Resolve-ProjectPath= copies have already drifted: the
+profile's version handles the =^~/= (WSL) case explicitly and leaves it
+untouched for WSL to resolve; =Start-WorkEnvironment.ps1='s version
+handles only =^~\\= and bare =^~$=, and so mishandles a WSL-form default
+project path.
+
+The =bt=/=vol=/=wifi=/=disp= pair is harmless - both resolve to the same
+=ms-settings:= URIs - but means a new settings shortcut has to be added
+twice to be reachable both ways.
+
+** Recommendation
+Extract the shared helpers into a single dot-sourced file under
+=tools/workflows/= that the other scripts load, and read the WSL home
+directory from the environment rather than hardcoding it.
+
+* FINDING 9: Downloads =_Archive= grows without bound
+
+** Severity
+Medium. The original problem is deferred rather than solved.
+
+** Evidence
+As of 2026-07-28, after =clean-dl= was run:
+
+#+begin_example
+C:\Users\faadz\Downloads\           3 entries (desktop.ini, one PDF, _Archive\)
+C:\Users\faadz\Downloads\_Archive\  12 GB, one dated folder: 2026-07-28
+#+end_example
+
+[[file:clear-downloads.org][Clear-Downloads.ps1]] moves files older than =-DaysOld= into
+=Downloads\_Archive\<date>\=. Nothing removes anything from =_Archive=.
+
+** Analysis
+=clean-dl= worked as designed - the top-level Downloads folder is clean,
+which addresses the Explorer hang from FLIGHT-009. But the 12GB simply
+moved one directory down. Since =_Archive= is a subdirectory of
+Downloads, opening Downloads in Explorer still means Explorer can be
+asked to enumerate it.
+
+Two items from FLIGHT-009's action list also remain open:
+
+- Registering =clean-dl -AutoArchive= as a scheduled task
+- Nothing prunes archived material
+
+** Recommendation
+Add a retention pass to [[file:clear-downloads.org][Clear-Downloads.ps1]] - delete or compress
+=_Archive\<date>\= folders older than some threshold - and register the
+scheduled task so neither step depends on remembering to run it.
+
+* FINDING 10: =AGENTS.md= contains a 26-line verbatim duplicate
+
+** Severity
+Low. No functional effect, but =AGENTS.md= is the file agents read first.
+
+** Evidence
+=AGENTS.md= lines *86-111* are reproduced verbatim at lines *142-167* -
+verified by extracting both ranges and diffing them. The duplicated
+block is the entire "PowerShell Environment Notes" section: the PS 5.1
+vs 7+ comparison, both =$PROFILE= path tables, and the
+"This Environment (OneDrive redirect) ✓ CONFIRMED" table.
+
+The two copies then diverge - the first continues into "Dependencies",
+the second into "PowerShell 5.1 Compatibility" - which is why the
+duplication is not obvious when reading top to bottom.
+
+** Analysis
+The file is 172 lines, so this is roughly 15% of it. The practical risk
+is the =$PROFILE= path table: it appears twice, and if one copy is ever
+corrected the other will silently contradict it. Given FINDING 2 already
+requires an =AGENTS.md= correction (the =whkdrc= "to be created" entry),
+both can be fixed in one pass.
+
+** Recommendation
+Delete the second copy (lines 142-167), keeping "PowerShell 5.1
+Compatibility" which follows it.
+
+* FINDING 11: Unused functions in two scripts
+
+** Severity
+Low.
+
+** Evidence
+
+| Function                  | Defined at                     | Called |
+|---------------------------+--------------------------------+--------|
+| =Get-CurrentDesktopNumber= | Start-WorkEnvironment.ps1:116 | Never  |
+| =$exports= (here-string)  | wsl-bridge.ps1:150             | Never  |
+
+=Get-CurrentDesktopNumber= is a complete 16-line implementation that
+enumerates =Get-DesktopList= to find the visible desktop. Nothing in the
+repository calls it.
+
+=$exports= is a here-string containing PowerShell function definitions,
+assigned to a variable that is then never referenced - so the block
+generates nothing and exports nothing. This compounds FINDING 6: it is
+dead code inside a file that is itself never loaded. Note that
+[[file:wsl-bridge.org][wsl-bridge.org]] currently describes =$exports= as if it functions,
+saying =Open-WSLInExplorer= "is not exported via the =$exports= alias
+block" - which implies the other functions are, and they are not.
+
+** Analysis
+Neither causes a failure. Both matter because they misrepresent the
+code's behaviour to a reader: =Get-CurrentDesktopNumber= suggests the
+work environment tracks the current desktop before switching (it does
+not - it switches unconditionally), and =$exports= suggests an export
+mechanism exists.
+
+** Recommendation
+Delete both, and correct the =$exports= sentence in [[file:wsl-bridge.org][wsl-bridge.org]].
+If FINDING 6 is resolved by deleting =wsl-bridge.ps1= outright, the
+second item resolves with it.
+
+* OPPORTUNITIES
+
+Distinct from the findings above: these are additions rather than
+corrections.
+
+** Tab-completion for =proj=
+
+[[file:../tools/workflows/projects.json][projects.json]] currently defines nine entries, several of them terse
+(=get=, =ssm=, =of=/=foam=). Recalling them requires running =proj list=
+first. A =Register-ArgumentCompleter= reading the same JSON gives
+tab-completion in roughly ten lines, and pairs naturally with the fuzzy
+picker hotkey proposed in FINDING 1.
+
+** A =workflow-doctor= command
+
+Much of this audit consists of drift only visible by inspecting running
+machine state: duplicate whkd processes, =whkdrc= diverging from any repo
+copy, missing PowerShell modules (=Get-ChildItemColor= is a hard
+dependency of =proj=).
+
+A single command that checks these and reports would have surfaced
+FINDING 3 immediately, and would keep surfacing it as the machine drifts.
+
+It would *not* have helped with FINDINGS 4 and 5. Those were not drift -
+they were correctly-observed facts given a wrong interpretation. A
+doctor command reporting "komorebi installed, not running" would have
+reproduced the original error faithfully. What resolved both was
+provenance: whose file is this, when was it written, and what wrote it.
+Worth remembering when deciding what such a tool should report - a bare
+inventory of running state invites exactly this class of mistake.
+
+** Non-interactive shell caveat for hotkey bindings
+
+Worth documenting explicitly wherever whkd bindings are recorded: whkd
+spawns a non-interactive PowerShell that does not read =$PROFILE=.
+Anything bound to a key must be reachable without the profile - full
+script paths, or an explicit dot-source in the binding. This is the most
+likely reason a newly added binding will appear to do nothing.
+
+* SEE ALSO
+
+[[file:powershell_workflows_reference.org][PowerShell Workflows - Complete Reference Guide]],
+[[file:../AGENTS.md][AGENTS.md]] (project structure and dependencies),
+=FLIGHT_LOG.org= (FLIGHT-009 open action items, FLIGHT-010 pending).
+
+*Note on =FLIGHT_LOG.org=* - it is gitignored as private notes
+(=.gitignore=: "Private notes (may contain personal workflow details)"),
+so the FLIGHT-009 and FLIGHT-010 references throughout this audit point
+to a file that exists only on this machine. This document, by contrast,
+is tracked. Anything from those flights that needs to survive belongs
+here or in =AGENTS.md=.
+
+*Related project* - =keyboardRemapping.ahk= at
+=G:\My Drive\Peribadi\autohotkeyScripts\my_autohotkey_scripts\=. Owns
+text expansion and MyGRANTS automation, and also holds =restart-whkd.ps1=
+and =restart-whkd.bat=. See its =AGENTS.md= and =FLIGHT_LOG.org=.

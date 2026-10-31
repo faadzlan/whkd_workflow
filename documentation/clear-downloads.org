@@ -1,0 +1,121 @@
+#+title: CLEAR-DOWNLOADS(1)
+#+subtitle: Downloads folder archival utility
+
+* NAME
+
+Clear-Downloads.ps1 - move old files out of Downloads into dated archive folders
+
+* SYNOPSIS
+
+#+begin_src powershell
+Clear-Downloads.ps1 [-DaysOld <int>] [-AutoArchive] [-WhatIf] [-Confirm]
+#+end_src
+
+* DESCRIPTION
+
+Clear-Downloads scans =%USERPROFILE%\Downloads= for files older than a
+cutoff age, moves them into a dated subfolder under
+=Downloads\_Archive\<yyyy-MM-dd>=, preserves the original relative folder
+structure, and then removes any directories left empty by the move.
+
+It exists to stop File Explorer/Everything-style indexers from choking on
+an ever-growing, flat Downloads folder - the same problem =logrotate=
+solves for log files, applied to a junk drawer.
+
+Each run creates (or reuses) a single dated archive folder, so running it
+more than once on the same day merges into that day's archive rather than
+creating duplicates.
+
+* OPTIONS
+
+- *-DaysOld* <int> ::
+  Only move files whose =LastWriteTime= is older than this many days.
+  Default: =30=.
+
+- *-AutoArchive* ::
+  Skip the "Move these files to archive? (y/n)" confirmation prompt.
+  Intended for unattended/scheduled runs. Default: off (prompts).
+
+- *-WhatIf* ::
+  Standard PowerShell common parameter. Reports what would be archived
+  and where, then exits without touching any files. Skips the
+  confirmation prompt entirely since nothing is modified.
+
+- *-Confirm* ::
+  Standard PowerShell common parameter. Prompts before each individual
+  =Move-Item=/=Remove-Item= operation, in addition to (or instead of) the
+  script's own bulk confirmation.
+
+* EXIT STATUS
+
+- *0* :: Success, including the no-op case where no files were old enough
+  to archive.
+- *1* :: The Downloads folder does not exist.
+
+Cancelling at the confirmation prompt also exits =0=.
+
+* EXAMPLES
+
+Archive everything older than the default 30 days, with confirmation:
+#+begin_src powershell
+.\tools\workflows\Clear-Downloads.ps1
+#+end_src
+
+Preview what would happen without moving anything:
+#+begin_src powershell
+.\tools\workflows\Clear-Downloads.ps1 -WhatIf
+#+end_src
+
+Unattended weekly cleanup, one week's worth of files, no prompt:
+#+begin_src powershell
+.\tools\workflows\Clear-Downloads.ps1 -DaysOld 7 -AutoArchive
+#+end_src
+
+* FILES
+
+- =%USERPROFILE%\Downloads= :: source folder scanned for old files.
+- =%USERPROFILE%\Downloads\_Archive\<yyyy-MM-dd>\= :: destination for
+  each day's archive run. Lives *inside* Downloads, so it is excluded
+  from future scans only by virtue of files already having been moved
+  out of it - re-running the script the same day continues filling that
+  day's folder rather than re-archiving already-archived files.
+
+* HOW IT WORKS
+
+1. Recursively lists every file under Downloads and totals count/size.
+2. Filters to files older than =-DaysOld=; exits early if none found.
+3. Prompts for confirmation unless =-AutoArchive= or =-WhatIf=.
+4. Creates =Downloads\_Archive\<today>= if it doesn't exist.
+5. Moves each old file to the same relative path under the archive root,
+   creating subdirectories as needed.
+6. Walks the Downloads tree for directories that are empty (no files
+   anywhere in their subtree, including newly-created archive
+   subfolders left behind by step 5) and removes them, deepest first.
+7. Prints a summary: files moved, files failed, archive location,
+   remaining file count in Downloads.
+
+* NOTES
+
+- Step 6 processes empty directories deepest-first and re-checks
+  existence before removing each one. A directory tree that is entirely
+  empty produces both a parent and child entry in the same empty-dir
+  scan; removing the parent (=-Recurse=) also removes the child, so
+  child-first ordering (plus an existence check) avoids "Cannot find
+  path" errors on the now-already-gone nested entries.
+- Files that fail to move (e.g. locked by another process) are counted
+  and reported but do not stop the run.
+- =-WhatIf= only covers the archive step; the initial file/size scan
+  always runs so the preview numbers are accurate.
+
+* SCHEDULING
+
+Register a weekly Task Scheduler job (Sundays at 18:00, unattended):
+#+begin_src powershell
+schtasks /create /tn "Weekly Downloads Cleanup" /tr "powershell.exe -File `"C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Clear-Downloads.ps1`" -AutoArchive" /sc weekly /d SUN /st 18:00
+#+end_src
+
+* SEE ALSO
+
+[[file:powershell_workflows_reference.org][PowerShell Workflows - Complete Reference Guide]] (=** Clear-Downloads.ps1=
+section) for how this script fits alongside the rest of the whkd_workflow
+toolset, [[file:load-workflow-profile.org][Load-WorkflowProfile.ps1]] (=clean-dl= alias).
