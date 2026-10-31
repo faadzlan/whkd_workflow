@@ -4,16 +4,20 @@
 alt + o : taskkill /f /im whkd.exe && Start-Process whkd -WindowStyle hidden
 
 # Workspaces
-alt + 1                 : Switch-Desktop -Desktop 0
-alt + 2                 : Switch-Desktop -Desktop 1
-alt + 3                 : Switch-Desktop -Desktop 2
-alt + 4                 : Switch-Desktop -Desktop 3
-alt + 5                 : Switch-Desktop -Desktop 4
-alt + 6                 : Switch-Desktop -Desktop 5
-alt + 7                 : Switch-Desktop -Desktop 6
-alt + 8                 : Switch-Desktop -Desktop 7
-alt + 9                 : Switch-Desktop -Desktop 8
-alt + 0                 : Switch-Desktop -Desktop 9
+# Switch-Desktop alone leaves no window active (the VirtualDesktop module
+# focuses then minimizes Program Manager to "give away focus"), so this
+# wrapper switches and then activates the last-used window on the target
+# desktop. See documentation/switch-desktop-focused.org.
+alt + 1                 : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Switch-DesktopFocused.ps1' 0
+alt + 2                 : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Switch-DesktopFocused.ps1' 1
+alt + 3                 : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Switch-DesktopFocused.ps1' 2
+alt + 4                 : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Switch-DesktopFocused.ps1' 3
+alt + 5                 : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Switch-DesktopFocused.ps1' 4
+alt + 6                 : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Switch-DesktopFocused.ps1' 5
+alt + 7                 : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Switch-DesktopFocused.ps1' 6
+alt + 8                 : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Switch-DesktopFocused.ps1' 7
+alt + 9                 : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Switch-DesktopFocused.ps1' 8
+alt + 0                 : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Switch-DesktopFocused.ps1' 9
 
 # Move windows across workspaces
 alt + shift + 1         : Move-ActiveWindow -Desktop 0

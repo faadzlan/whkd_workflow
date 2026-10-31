@@ -1,0 +1,32 @@
+#+title: SWITCH-DESKTOPFOCUSED(1)
+#+subtitle: Switch virtual desktop and re-activate the last-used window
+
+* NAME
+
+Switch-DesktopFocused.ps1 - switch to a virtual desktop, then activate the window that was last used on it
+
+* SYNOPSIS
+
+#+begin_src powershell
+Switch-DesktopFocused.ps1 [[-Desktop] <int>] [-NoSwitch]
+#+end_src
+
+* DESCRIPTION
+
+Bound to =alt + 0..9= in =config/whkdrc= in place of a bare =Switch-Desktop=.
+
+The VirtualDesktop module's =Switch-Desktop= (its C# =MakeVisible()=, around line 937 of =VirtualDesktop.ps1= in module 1.5.7) foregrounds Program Manager before switching and then minimizes it with the comment "direct desktop to give away focus". The result is that after every switch no window on the new desktop is active: windows are visible but keystrokes go nowhere until Alt+Tab or a click.
+
+This script calls =Switch-Desktop=, then walks the global Z-order from the top and activates the first real application window (visible, not minimized, unowned, not a tool window, has a title, not shell chrome) that is not DWM-cloaked. Windows on other virtual desktops are cloaked, so this finds the topmost window on the desktop just switched to. Z-order survives desktop switches, so that is the window last used there, including one just sent over with =alt + shift + N= (=Move-ActiveWindow=). Activation uses =AttachThreadInput= + =SetForegroundWindow=, the same trick the module itself uses to get past the foreground lock. It retries for up to ~0.5 s while cloaking settles; on an empty desktop it simply times out and leaves focus on the desktop.
+
+The Win32 helper is compiled once to =%LOCALAPPDATA%\whkd_workflow\DesktopFocus-<hash>.dll=; later runs only load it. The hash changes whenever the embedded C# changes, so edits recompile automatically.
+
+* OPTIONS
+
+- *-Desktop* :: Zero-based desktop index, as for =Switch-Desktop=. Default 0.
+- *-NoSwitch* :: Skip the switch; only activate the topmost window on the current desktop. For testing.
+
+* CAVEATS
+
+- "Last used" means topmost in Z-order. A window that was raised without being focused (e.g. a notification-style popup) could win instead.
+- A window that is pinned to all desktops is never cloaked, so if it sits above everything else it will be the one activated.
