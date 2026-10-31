@@ -1,6 +1,10 @@
 #+title: PowerShell Workflows - Complete Reference Guide
 #+subtitle: Quick reference for all automation scripts and shortcuts
 
+#+begin_note
+Outdated as of 2026-10-31: the profile now loads only =bt=, =exp=, =mem=, =bye= and =wf=. The aliases below (=proj=, =work=, =syshealth=, =clean-dl=, the Settings openers other than =bt=, the WSL bridge, =touch=/=which=/=findf=) are no longer defined; the scripts themselves still run by path. See [[file:load-workflow-profile.org][load-workflow-profile.org]] for the audit and current set.
+#+end_note
+
 * Quick Start
 
 ** Loading the Workflows

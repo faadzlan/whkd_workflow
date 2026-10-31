@@ -1,129 +1,45 @@
 #+title: LOAD-WORKFLOWPROFILE(1)
-#+subtitle: Load all workflow shortcut functions into the current session
+#+subtitle: Load the everyday workflow shortcuts into the current session
 
 * NAME
 
-Load-WorkflowProfile.ps1 - source all whkd_workflow shortcut functions
-into the current PowerShell session
+Load-WorkflowProfile.ps1 - define the four everyday shortcuts (=bt=, =exp=, =mem=, =bye=) and the =wf= help command in the current PowerShell session
 
 * SYNOPSIS
 
 #+begin_src powershell
-. .\tools\workflows\Load-WorkflowProfile.ps1
-#+end_src
-
-Must be *dot-sourced* (leading =. = before the path). Running it without
-the dot executes it in a child scope and none of the functions persist.
-
-* DESCRIPTION
-
-Load-WorkflowProfile defines every shortcut function in this toolset
-directly in the calling session - navigation, Settings shortcuts, system
-health, the =work=/=bye=/=clean-dl= workflow wrappers, the WSL bridge,
-and small file utilities. It is the =~/.bashrc= of this project: add one
-line to =$PROFILE= and every shortcut below is available in every new
-PowerShell session.
-
-Unlike [[file:go-to-project.org][Go-ToProject.ps1]], which can also be run standalone, this file's
-functions are only meant to be *sourced*, not executed directly - =proj=,
-=bt=, =work=, etc. are defined as functions in the caller's scope, not
-run once and exited. It dot-sources =Common.ps1= for the path/WSL
-helpers shared with [[file:go-to-project.org][Go-ToProject.ps1]] and
-[[file:start-work-environment.org][Start-WorkEnvironment.ps1]] (FINDING 8 of the 2026-07 workflow audit).
-
-* PARAMETERS
-
-None. All behavior comes from dot-sourcing; there is nothing to pass on
-the command line.
-
-* FUNCTIONS DEFINED
-
-Navigation & Projects ::
-- =proj <name> [-e|-t|-w|-m]= - one-line wrapper that forwards all
-  arguments to [[file:go-to-project.org][Go-ToProject.ps1]], the single =proj= implementation
-  (FINDING 7). Jump to a project from =projects.json= (Explorer /
-  Terminal / WSL / Emacs); bare call changes directory. =proj list=
-  shows all configured projects.
-- =home=, =docs=, =dl= - =Set-Location= to =%USERPROFILE%=,
-  =%USERPROFILE%\Projects=, =%USERPROFILE%\Downloads=.
-- =exp [path]= - open File Explorer at the current or given path.
-
-Settings Shortcuts ::
-- =bt=, =vol=, =wifi=, =disp=, =startup-apps=, =power= - one-line
-  wrappers around [[file:open-quick-settings.org][Open-QuickSettings.ps1]], which owns the =ms-settings:=
-  URI table (single source of truth, FINDING 8).
-
-System Health ::
-- =syshealth= - runs [[file:show-system-health.org][Show-SystemHealth.ps1]].
-- =mem=, =cpu= - top 10 processes by working set / CPU time.
-- =doctor= - runs Test-WorkflowSetup.ps1 ("workflow-doctor"): checks for
-  duplicate whkd processes, live-vs-repo whkdrc drift, and missing
-  PowerShell modules.
-
-Workflow Commands ::
-- =work [path]= - runs [[file:start-work-environment.org][Start-WorkEnvironment.ps1]], forwarding =path= as
-  =-ProjectPath= if given.
-- =bye= - runs [[file:close-all-windows.org][Close-AllWindows.ps1]].
-- =clean-dl [args]= - runs [[file:clear-downloads.org][Clear-Downloads.ps1]], forwarding all arguments.
-
-WSL Bridge (absorbed the retired =wsl-bridge.ps1= - see [[file:wsl-bridge.org][wsl-bridge.org]]) ::
-- =wsl-path [path]= - convert a Windows path to =/mnt/<drive>/...= form
-  (current directory if omitted).
-- =win-path <wslPath>= - convert =/mnt/<drive>/...= back to =<Drive>:\...=.
-- =cp-wsl [path]=, =cp-win [path]= - copy the WSL- or Windows-format path
-  to the clipboard.
-- =wsl-here [cmd]= - run =cmd= (default =bash=) inside WSL at the
-  Windows-current-directory's WSL equivalent.
-- =wsl-status= - show =wsl -l -v= output and =.wslconfig= contents.
-- =wsl-explorer= - open the current directory in File Explorer.
-
-File Utilities ::
-- =touch <path>= - create the file, or bump its =LastWriteTime= if it
-  already exists.
-- =which <name>= - print the resolved path of a command.
-- =findf <name> [path]= - recursive =*name*= filename search under
-  =path= (default =.=).
-
-* FILES
-
-- =Common.ps1= (same directory) :: dot-sourced for =Resolve-ProjectPath=,
-  =Test-IsWSLPath=, =ConvertTo-WSLPath=, =ConvertTo-WindowsPath=,
-  =Convert-WSLPathToUNC=, =Get-WSLHomeDir=.
-- =projects.json= (same directory as [[file:go-to-project.org][Go-ToProject.ps1]]) :: shared project
-  alias config; read by =Go-ToProject.ps1= on every =proj= call, since
-  this file's =proj= is only a forwarding wrapper.
-
-* EXIT STATUS
-
-Always exits normally after printing the loaded-shortcuts summary;
-there is no failure mode beyond individual functions failing when later
-invoked.
-
-* EXAMPLES
-
-Load once in an interactive session:
-#+begin_src powershell
-. .\tools\workflows\Load-WorkflowProfile.ps1
-#+end_src
-
-Auto-load on every new PowerShell session, added to =$PROFILE=:
-#+begin_src powershell
-notepad $PROFILE
-# add this line at the end:
 . C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Load-WorkflowProfile.ps1
 #+end_src
 
-* NOTES
+Must be *dot-sourced* (leading =. =). It is dot-sourced from the PowerShell 7 =$PROFILE= (=C:\Users\faadz\OneDrive\Documents\PowerShell\Microsoft.PowerShell_profile.ps1=), so it runs in every new Windows Terminal tab and prints one line: =bt, exp, mem, bye  (wf for more)=.
 
-- =proj= no longer has its own implementation here - see FINDING 7 of
-  [[file:workflow-audit-2026-07.org][the 2026-07 workflow audit]] for why two divergent copies used to exist
-  and how that was a real (if currently invisible) bug: whichever script
-  ran last silently won for the rest of the session.
-  [[file:go-to-project.org][Go-ToProject.ps1]] is now the only place project/WSL path logic lives.
-- =mem=/=cpu= are quick one-liners; for the fuller dashboard (disk,
-  network, startup impact) use =syshealth=.
+* COMMANDS
+
+- =bt= :: Open the Bluetooth Settings page (via [[file:open-quick-settings.org][Open-QuickSettings.ps1]]). Win+A only has the toggle; this opens the full page for pairing.
+- =exp [path]= :: Open File Explorer at the current directory or =path=. Equivalent to the built-in =ii .= / =explorer .=; kept because it is muscle memory.
+- =mem= :: Top 10 processes by working set, in MB.
+- =bye= :: Close all windows (via [[file:close-all-windows.org][Close-AllWindows.ps1]]).
+- =wf= :: Print the shortcuts above, the scripts that are no longer loaded into every shell, and the whkd hotkeys.
+
+* HISTORY: THE 2026-10-31 USAGE AUDIT
+
+Until 2026-10-31 this file defined 27 commands (navigation, six Settings openers, system health, =work=/=clean-dl=, a five-command WSL bridge, =touch=/=which=/=findf=) and printed a ~30-line banner in every tab, costing ~0.2-0.25 s per tab.
+
+An audit of PSReadLine history (=ConsoleHost_history.txt=, 1,304 lines; this toolset's commands first appear at line 809, matching the 2026-03-14 initial commit) found:
+
+| Command | Trial burst (lines 809-1002) | Last ~300 lines |
+|---------+------------------------------+-----------------|
+| =bt= | 2 | 5 |
+| =bye= | 0 | 6 |
+| =mem= | 5 | 5 |
+| =exp= | 7 | 5 |
+| =proj= | 12 | 0 (replaced by zoxide =z=) |
+| =work= | 9 | 0 |
+| =syshealth=, =cpu=, =startup-apps=, =clean-dl=, =docs=, =dl= | 1-3 each | 0-2 |
+| 14 others (=vol=, =wifi=, =disp=, =power=, =home=, =doctor=, all WSL helpers, =which=, =findf=, =touch=) | 0 | 0 |
+
+Only the four still in steady use were kept. The underlying scripts (=Show-SystemHealth.ps1=, =Start-WorkEnvironment.ps1=, =Clear-Downloads.ps1=, =Go-ToProject.ps1=, =Open-QuickSettings.ps1=, =Test-WorkflowSetup.ps1=) are unchanged and still run by path and from the whkd hotkeys; the WSL bridge and =touch=/=which=/=findf= were deleted outright. History has no timestamps and does not capture whkd hotkey presses, so hotkey use was not measured.
 
 * SEE ALSO
 
-[[file:powershell_workflows_reference.org][PowerShell Workflows - Complete Reference Guide]], every script listed
-under FUNCTIONS DEFINED above, [[file:workflow-audit-2026-07.org][Workflow Setup Audit (2026-07)]].
+[[file:open-quick-settings.org][Open-QuickSettings.ps1]], [[file:close-all-windows.org][Close-AllWindows.ps1]], [[file:powershell_workflows_reference.org][powershell_workflows_reference.org]] (describes the pre-audit command set)

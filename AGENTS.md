@@ -94,8 +94,10 @@ cd /mnt/c/Users/<USERNAME>/Projects/whkd_workflow/tools/shell
 
 ### projects.json
 JSON file containing project name → path mappings. Used by:
-- `Load-WorkflowProfile.ps1` (the `proj` function in your PowerShell profile)
 - `Go-ToProject.ps1` (standalone script)
+- `Show-ProjectPicker.ps1` (the `alt + shift + p` picker)
+
+The `proj` profile function was removed on 2026-10-31 (unused since zoxide took over); see `documentation/load-workflow-profile.org`.
 
 To add/modify projects, edit `tools/workflows/projects.json` - changes apply everywhere automatically.
 
@@ -157,7 +159,7 @@ PowerShell 5.1 and 7+ use **different** profile locations.
 
 | Module | Purpose | Used In |
 |--------|---------|---------|
-| `Get-ChildItemColor` | Colorized directory listings (like `ls --color`) | `proj` command in Load-WorkflowProfile.ps1, Go-ToProject.ps1 |
+| `Get-ChildItemColor` | Colorized directory listings (like `ls --color`) | Go-ToProject.ps1 |
 | `PSReadLine` | Modern terminal experience (predictions, syntax highlighting) | PowerShell 7+ (pre-installed) |
 
 **Install if missing:**
