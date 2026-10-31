@@ -149,9 +149,9 @@ if ($ipConfig) {
 Write-Host "`nInternet Connectivity:" -ForegroundColor Yellow -NoNewline
 $ping = Test-Connection -ComputerName 8.8.8.8 -Count 1 -Quiet
 if ($ping) {
-    Write-Host " ✓ Online" -ForegroundColor Green
+    Write-Host " [OK] Online" -ForegroundColor Green
 } else {
-    Write-Host " ✗ Offline" -ForegroundColor Red
+    Write-Host " [X] Offline" -ForegroundColor Red
 }
 
 #------------------------------------------------------------------------------
@@ -162,7 +162,7 @@ Write-Host "QUICK ACTIONS" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
 if ($ramPercent -gt 85) {
-    Write-Host "⚠ High memory usage detected!" -ForegroundColor Red
+    Write-Host "[!] High memory usage detected!" -ForegroundColor Red
     Write-Host "  Run: Get-Process | Sort-Object WorkingSet -Descending | Select-Object -First 10" -ForegroundColor Yellow
     Write-Host "  Or:  Stop-Process -Name chrome -Force (if Chrome is the culprit)" -ForegroundColor Yellow
 }

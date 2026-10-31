@@ -30,15 +30,3 @@ alt + shift + 7         : Move-ActiveWindow -Desktop 6
 alt + shift + 8         : Move-ActiveWindow -Desktop 7
 alt + shift + 9         : Move-ActiveWindow -Desktop 8
 alt + shift + 0         : Move-ActiveWindow -Desktop 9
-
-# Workflow shortcuts (FINDING 1, documentation/workflow-audit-2026-07.org)
-# whkd's ".shell powershell" spawns a NON-INTERACTIVE shell that does not
-# read $PROFILE, so these invoke tools/workflows scripts by full path
-# rather than by the proj/work/syshealth function names from
-# Load-WorkflowProfile.ps1. Only idempotent, non-destructive verbs are
-# bound here - `bye` (closes every window) and `clean-dl` (moves
-# gigabytes) stay unbound until FINDING 3 (competing whkd restart
-# mechanisms / duplicate-daemon risk) is resolved.
-alt + shift + w         : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Start-WorkEnvironment.ps1'
-alt + shift + s         : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Show-SystemHealth.ps1'
-alt + shift + p         : & 'C:\Users\faadz\Projects\whkd_workflow\tools\workflows\Show-ProjectPicker.ps1'

@@ -482,7 +482,6 @@ All scripts are in ~tools/workflows/~:
 | ~Open-QuickSettings.ps1~    | Settings shortcuts               |
 | ~Go-ToProject.ps1~          | Project navigation                |
 | ~Common.ps1~                | Shared helpers (paths, WSL conversion), dot-sourced by the above |
-| ~Show-ProjectPicker.ps1~    | Fuzzy project picker for the =alt + shift + p= hotkey |
 | ~Test-WorkflowSetup.ps1~    | =doctor= - checks for drift (duplicate whkd, whkdrc, modules) |
 
 * Resources

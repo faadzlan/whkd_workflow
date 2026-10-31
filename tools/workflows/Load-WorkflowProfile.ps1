@@ -56,7 +56,6 @@ function wf {
     Write-Host "  Test-WorkflowSetup.ps1     Check for whkd/config drift" -ForegroundColor Gray
     Write-Host "`nwhkd hotkeys" -ForegroundColor Yellow
     Write-Host "  alt+1..0 switch desktop | alt+shift+1..0 move window | alt+o restart whkd" -ForegroundColor Gray
-    Write-Host "  alt+shift+w work env | alt+shift+s system health | alt+shift+p project picker" -ForegroundColor Gray
 }
 
 Write-Host "bt, exp, mem, bye  (wf for more)" -ForegroundColor DarkGray

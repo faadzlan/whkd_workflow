@@ -95,7 +95,6 @@ cd /mnt/c/Users/<USERNAME>/Projects/whkd_workflow/tools/shell
 ### projects.json
 JSON file containing project name → path mappings. Used by:
 - `Go-ToProject.ps1` (standalone script)
-- `Show-ProjectPicker.ps1` (the `alt + shift + p` picker)
 
 The `proj` profile function was removed on 2026-10-31 (unused since zoxide took over); see `documentation/load-workflow-profile.org`.
 
